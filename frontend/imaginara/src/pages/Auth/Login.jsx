@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import api from "../../api/api";
 
 const Login = ({ onLogin }) => {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+  
   // State to track mobile status
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   // Responsive logic and float animation setup
   useEffect(() => {
     // 1. Handle Responsive Resize
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", handleResize);
+    const handleResize = () => {
+        setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
 
     // 2. Create the "float" animation safely
     let styleSheet = document.styleSheets[0];
@@ -32,63 +35,64 @@ const Login = ({ onLogin }) => {
       }
     `;
     try {
-      if (!Array.from(styleSheet.cssRules).some((rule) => rule.name === "float")) {
+      if (!Array.from(styleSheet.cssRules).some(rule => rule.name === 'float')) {
         styleSheet.insertRule(keyframes, styleSheet.cssRules.length);
       }
     } catch (err) {
       console.warn("Animation rule already exists or cannot be inserted:", err);
     }
 
-    return () => window.removeEventListener("resize", handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-
-    // Simulate frontend-only login
-    setTimeout(() => {
-      if (!form.email || !form.password) {
-        setError("Both email and password are required.");
-        setLoading(false);
-        return;
-      }
-      onLogin?.(form); // Trigger parent callback
-      navigate("/home"); // Redirect after login
+    try {
+      const res = await api.post("/api/auth/login", form);
+      localStorage.setItem("token", res.data.token);
+      onLogin?.();
+      navigate("/home");
+    } catch (err) {
+      setError(err.response?.data?.message || "Invalid credentials");
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
-  // Helper function for responsive styles
-  const getResponsiveStyle = (desktopStyle, mobileStyle) => (isMobile ? mobileStyle : desktopStyle);
+  // Helper function to dynamically adjust styles based on screen size
+  const getResponsiveStyle = (desktopStyle, mobileStyle) => {
+    return isMobile ? mobileStyle : desktopStyle;
+  };
 
   const cardStyle = {
     ...styles.card,
-    flexDirection: getResponsiveStyle("row", "column"),
-    width: getResponsiveStyle("950px", "90%"),
-    height: getResponsiveStyle("550px", "auto"),
-    maxHeight: "90vh",
-    overflowY: isMobile ? "auto" : "hidden",
+    flexDirection: getResponsiveStyle('row', 'column'),
+    width: getResponsiveStyle('950px', '90%'),
+    height: getResponsiveStyle('550px', 'auto'),
+    maxHeight: '90vh', // Ensure it fits within the viewport height
+    overflowY: isMobile ? 'auto' : 'hidden', // Allow scrolling on mobile if content overflows
   };
 
   const leftSectionStyle = {
     ...styles.leftSection,
-    display: getResponsiveStyle("flex", "none"), // hide on mobile
+    display: getResponsiveStyle('flex', 'none'), // Hide illustration on mobile
   };
 
   const rightSectionStyle = {
     ...styles.rightSection,
-    flex: getResponsiveStyle(1, "unset"),
-    padding: getResponsiveStyle("40px", "30px 20px"),
+    flex: getResponsiveStyle(1, 'unset'),
+    padding: getResponsiveStyle('40px', '30px 20px'),
   };
-
+  
   const formStyle = {
     ...styles.form,
-    width: getResponsiveStyle("90%", "100%"),
+    width: getResponsiveStyle('90%', '100%'), // Use full width on mobile
   };
+
 
   return (
     <div style={styles.container}>
@@ -96,6 +100,7 @@ const Login = ({ onLogin }) => {
         <div style={leftSectionStyle}>
           <h1 style={styles.brand}>Welcome Back!</h1>
           <p style={styles.tagline}>Log in and continue your creative journey 🚀</p>
+          
         </div>
 
         <div style={rightSectionStyle}>
@@ -137,6 +142,7 @@ const Login = ({ onLogin }) => {
 };
 
 // -------------------- BASE STYLES --------------------
+// These styles are used as base properties and merged with responsive overrides.
 const styles = {
   container: {
     display: "flex",
@@ -146,7 +152,7 @@ const styles = {
     background: "linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%)",
     fontFamily: "'Inter', sans-serif",
     overflow: "hidden",
-    padding: "20px",
+    padding: "20px", // Added padding for mobile safety
   },
   card: {
     display: "flex",
@@ -178,6 +184,13 @@ const styles = {
     opacity: "0.95",
     marginBottom: "40px",
     lineHeight: "1.5",
+  },
+  image: {
+    width: "280px",
+    animation: "float 3s ease-in-out infinite",
+    filter: "drop-shadow(5px 5px 10px rgba(0,0,0,0.2))",
+    maxWidth: "100%", // Ensure image scales down
+    height: "auto",
   },
   rightSection: {
     display: "flex",
@@ -217,6 +230,10 @@ const styles = {
     letterSpacing: "0.5px",
     transition: "all 0.3s ease",
     boxShadow: "0 8px 20px rgba(106, 130, 251, 0.3)",
+    "&:disabled": {
+      opacity: "0.7",
+      cursor: "not-allowed",
+    },
   },
   error: {
     color: "#e74c3c",
@@ -237,4 +254,4 @@ const styles = {
   },
 };
 
-export default Login;
+export default Login;                      

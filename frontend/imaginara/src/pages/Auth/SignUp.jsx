@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+ import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";   
+import api from "../../api/api";
 
 const SignUp = ({ onSignUp }) => {
   const navigate = useNavigate();
@@ -7,7 +8,7 @@ const SignUp = ({ onSignUp }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Re-creating the float animation
+  // Re-creating the float animation for consistency
   useEffect(() => {
     let styleSheet = document.styleSheets[0];
     if (!styleSheet) {
@@ -24,7 +25,7 @@ const SignUp = ({ onSignUp }) => {
       }
     `;
     try {
-      if (!Array.from(styleSheet.cssRules).some((rule) => rule.name === "float")) {
+      if (!Array.from(styleSheet.cssRules).some(rule => rule.name === 'float')) {
         styleSheet.insertRule(keyframes, styleSheet.cssRules.length);
       }
     } catch (err) {
@@ -34,22 +35,21 @@ const SignUp = ({ onSignUp }) => {
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSignUp = (e) => {
+  const handleSignUp = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    // Simulate frontend-only signup
-    setTimeout(() => {
-      if (!form.name || !form.email || !form.password) {
-        setError("All fields are required.");
-        setLoading(false);
-        return;
-      }
-      onSignUp?.(form); // Trigger parent callback
-      navigate("/home"); // Redirect after signup
+    try {
+      const res = await api.post("/api/auth/register", form);
+      localStorage.setItem("token", res.data.token);
+      onSignUp?.();
+      navigate("/home");
+    } catch (err) {
+      setError(err.response?.data?.message || "Something went wrong");
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   return (
@@ -58,6 +58,7 @@ const SignUp = ({ onSignUp }) => {
         <div style={styles.leftSection}>
           <h1 style={styles.brand}>Join the Adventure!</h1>
           <p style={styles.tagline}>Unlock your potential and start creating amazing things. ✨</p>
+         
         </div>
 
         <div style={styles.rightSection}>
@@ -108,13 +109,14 @@ const SignUp = ({ onSignUp }) => {
 };
 
 // -------------------- STYLES --------------------
+// The styles are mirrored from the enhanced Login component for a cohesive look.
 const styles = {
   container: {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
     minHeight: "100vh",
-    background: "linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%)",
+    background: "linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%)", // Softer, modern background
     fontFamily: "'Inter', sans-serif",
     overflow: "hidden",
   },
@@ -131,7 +133,7 @@ const styles = {
   },
   leftSection: {
     flex: 1.2,
-    background: "linear-gradient(135deg, #6a82fb 0%, #fc5c7d 100%)",
+    background: "linear-gradient(135deg, #6a82fb 0%, #fc5c7d 100%)", // Vibrant, inviting gradient
     color: "white",
     padding: "60px 40px",
     display: "flex",
@@ -152,6 +154,11 @@ const styles = {
     opacity: "0.95",
     marginBottom: "40px",
     lineHeight: "1.5",
+  },
+  image: {
+    width: "280px",
+    animation: "float 3s ease-in-out infinite",
+    filter: "drop-shadow(5px 5px 10px rgba(0,0,0,0.2))",
   },
   rightSection: {
     flex: 1,
@@ -194,6 +201,14 @@ const styles = {
     letterSpacing: "0.5px",
     transition: "all 0.3s ease",
     boxShadow: "0 8px 20px rgba(106, 130, 251, 0.3)",
+    "&:hover": {
+      transform: "translateY(-3px)",
+      boxShadow: "0 12px 25px rgba(106, 130, 251, 0.4)",
+    },
+    "&:disabled": {
+      opacity: "0.7",
+      cursor: "not-allowed",
+    },
   },
   error: {
     color: "#e74c3c",
@@ -211,7 +226,11 @@ const styles = {
     fontWeight: "600",
     textDecoration: "none",
     transition: "color 0.3s ease",
+    "&:hover": {
+      textDecoration: "underline",
+      color: "#fc5c7d",
+    },
   },
 };
 
-export default SignUp;
+export default SignUp;    
