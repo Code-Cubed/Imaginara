@@ -16,8 +16,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Connect to MongoDB
-connectDB(process.env.MONGO_URI);
+// ✅ Connect to MongoDB
+connectDB();
 
 // API Routes
 app.use('/api/auth', authRoutes);

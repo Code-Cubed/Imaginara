@@ -1,8 +1,8 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 
-const LeftBar = () => {
-  const location = useLocation(); // Get current path
+const LeftBar = ({ onLogout }) => {
+  const location = useLocation(); 
 
   const styles = {
     leftBar: {
@@ -42,25 +42,46 @@ const LeftBar = () => {
       width: "32px",
       height: "32px",
     },
+    logout: {
+      width: "48px",
+      height: "48px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      cursor: "pointer",
+      borderRadius: "12px",
+      backgroundColor: "#f44336",
+      transition: "all 0.3s ease",
+    },
+    logoutIcon: {
+      width: "24px",
+      height: "24px",
+      filter: "invert(1)",
+    },
   };
 
   const menuItems = [
-    { path: "/", icon: "https://cdn-icons-png.flaticon.com/512/1946/1946436.png", alt: "Home" },
+    { path: "/home", icon: "https://cdn-icons-png.flaticon.com/512/1946/1946436.png", alt: "Home" },
     { path: "/create", icon: "https://cdn-icons-png.flaticon.com/512/1828/1828817.png", alt: "Create" },
     { path: "/updates", icon: "https://cdn-icons-png.flaticon.com/512/1828/1828899.png", alt: "Updates" },
     { path: "/messages", icon: "https://cdn-icons-png.flaticon.com/512/2462/2462719.png", alt: "Messages" },
     { path: "/settings", icon: "https://cdn-icons-png.flaticon.com/512/3524/3524659.png", alt: "Settings" },
   ];
 
+  const handleLogout = () => {
+    localStorage.removeItem("token"); // clear token
+    if (onLogout) onLogout();         // update App state
+  };
+
   return (
     <div style={styles.leftBar}>
       <div style={styles.menuIcons}>
         {/* Logo */}
         <Link
-          to="/"
+          to="/home"
           style={{
             ...styles.menuIcon,
-            ...(location.pathname === "/" ? styles.active : {}),
+            ...(location.pathname === "/home" ? styles.active : {}),
           }}
         >
           <img
@@ -82,6 +103,15 @@ const LeftBar = () => {
             <img src={item.icon} alt={item.alt} width={24} height={24} />
           </Link>
         ))}
+      </div>
+
+      {/* Logout Button at bottom */}
+      <div style={styles.logout} onClick={handleLogout}>
+        <img
+          src="https://cdn-icons-png.flaticon.com/512/1828/1828479.png"
+          alt="Logout"
+          style={styles.logoutIcon}
+        />
       </div>
     </div>
   );
