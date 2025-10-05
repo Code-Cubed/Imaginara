@@ -4,17 +4,18 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Landing from "./pages/Landing/Landing";
 import Login from "./pages/Auth/Login";
 import SignUp from "./pages/Auth/SignUp";
-import Home from "./pages/Home/Home";
+import HomePage from "./pages/Home/Home";
+import ProfilePage from "./pages/Profile/ProfilePage";
 import TopBar from "./components/topBar/TopBar";
 import LeftBar from "./components/leftBar/LeftBar";
 
-// Layout for authenticated pages with logout support
+
 const AppLayout = ({ children, onLogout }) => (
-  <div style={{ display: "flex", height: "100vh", backgroundColor: "#fafafa" }}>
+  <div className="flex h-screen bg-gray-50">
     <LeftBar onLogout={onLogout} />
-    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+    <div className="flex-1 flex flex-col">
       <TopBar />
-      <div style={{ padding: "20px", flex: 1, overflowY: "auto" }}>{children}</div>
+      <div className="p-4 flex-1 overflow-y-auto">{children}</div>
     </div>
   </div>
 );
@@ -22,13 +23,11 @@ const AppLayout = ({ children, onLogout }) => (
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check for token on app start
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) setIsAuthenticated(true);
   }, []);
 
-  // Handler for logout
   const handleLogout = () => {
     localStorage.removeItem("token");
     setIsAuthenticated(false);
@@ -38,7 +37,6 @@ const App = () => {
     <BrowserRouter>
       <Routes>
         {!isAuthenticated ? (
-          // Public routes before login
           <>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login onLogin={() => setIsAuthenticated(true)} />} />
@@ -46,9 +44,23 @@ const App = () => {
             <Route path="*" element={<Navigate to="/" />} />
           </>
         ) : (
-          // Authenticated routes
           <>
-            <Route path="/home" element={<AppLayout onLogout={handleLogout}><Home /></AppLayout>} />
+            <Route
+              path="/home"
+              element={
+                <AppLayout onLogout={handleLogout}>
+                  <HomePage />
+                </AppLayout>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <AppLayout onLogout={handleLogout}>
+                  <ProfilePage />
+                </AppLayout>
+              }
+            />
             <Route path="*" element={<Navigate to="/home" />} />
           </>
         )}
