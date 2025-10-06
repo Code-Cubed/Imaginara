@@ -1,60 +1,130 @@
-import React, { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+// App.jsx
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
-import Landing from "./pages/Landing/Landing";
-import Login from "./pages/Auth/Login";
-import SignUp from "./pages/Auth/SignUp";
-import Home from "./pages/Home/Home";
-import TopBar from "./components/topBar/TopBar";
-import LeftBar from "./components/leftBar/LeftBar";
+import Landing from './pages/Landing/Landing';
+import Login from './pages/Auth/login';
+import SignUp from './pages/Auth/signup';
+import ArtworkList from './pages/Artwork/ArtworkList';
+import ArtworkDetail from './pages/Artwork/ArtworkDetail';
+import AddArtwork from './pages/Artwork/Addartwork';
+import Home from './pages/Home/Home';
 
-// Layout for authenticated pages with logout support
-const AppLayout = ({ children, onLogout }) => (
-  <div style={{ display: "flex", height: "100vh", backgroundColor: "#fafafa" }}>
-    <LeftBar onLogout={onLogout} />
-    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-      <TopBar />
-      <div style={{ padding: "20px", flex: 1, overflowY: "auto" }}>{children}</div>
-    </div>
-  </div>
-);
-
-const App = () => {
+function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Check for token on app start
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) setIsAuthenticated(true);
+    // Check if user is authenticated
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsAuthenticated(true);
+    }
+    setLoading(false);
   }, []);
 
-  // Handler for logout
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+  };
+
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem('token');
     setIsAuthenticated(false);
   };
 
+  if (loading) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+        }}
+      >
+        <div>Loading...</div>
+      </div>
+    );
+  }
+
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
-        {!isAuthenticated ? (
-          // Public routes before login
-          <>
-            <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login onLogin={() => setIsAuthenticated(true)} />} />
-            <Route path="/signup" element={<SignUp onSignUp={() => setIsAuthenticated(true)} />} />
-            <Route path="*" element={<Navigate to="/" />} />
-          </>
-        ) : (
-          // Authenticated routes
-          <>
-            <Route path="/home" element={<AppLayout onLogout={handleLogout}><Home /></AppLayout>} />
-            <Route path="*" element={<Navigate to="/home" />} />
-          </>
-        )}
+        {/* Landing Page */}
+        <Route
+          path="/landing"
+          element={
+            isAuthenticated ? <Navigate to="/home" replace /> : <Landing />
+          }
+        />
+
+        {/* Public Routes */}
+        <Route
+          path="/login"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/home" replace />
+            ) : (
+              <Login onLogin={handleLogin} />
+            )
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/home" replace />
+            ) : (
+              <SignUp onRegister={handleLogin} />
+            )
+          }
+        />
+
+        {/* Protected Routes */}
+        <Route
+          path="/home"
+          element={
+            isAuthenticated ? (
+              <ArtworkList onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/addartwork"
+          element={
+            isAuthenticated ? (
+              <AddArtwork onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/artwork/:id"
+          element={
+            isAuthenticated ? (
+              <ArtworkDetail onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        {/* Root path */}
+        <Route
+          path="/"
+          element={
+            isAuthenticated ? <Navigate to="/home" replace /> : <Navigate to="/landing" replace />
+          }
+        />
+
+        {/* 404 */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
-};
+}
 
 export default App;
