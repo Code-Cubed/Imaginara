@@ -1,3 +1,4 @@
+// models/User.js
 const mongoose = require('mongoose');
 
 const UserSchema = new mongoose.Schema({
@@ -8,6 +9,7 @@ const UserSchema = new mongoose.Schema({
   bio: { type: String },
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  bookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Artwork' }],
   role: { type: String, default: 'user' },
 }, { timestamps: true });
 

@@ -1,6 +1,7 @@
 // controllers/artworkController.js
 const Artwork = require('../models/Artwork');
 const Comment = require('../models/Comment');
+const User = require('../models/User');
 const { uploadToCloudinary } = require('../middlewares/upload');
 
 exports.createArtwork = async (req, res) => {
@@ -20,32 +21,42 @@ exports.createArtwork = async (req, res) => {
       tags: typeof tags === 'string' ? tags.split(',').map(t => t.trim()) : tags,
       category
     });
+
+    // Emit socket event for new upload
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('artwork-uploaded', { 
+        artwork: art,
+        userId: req.user._id.toString() 
+      });
+    }
+
     res.json(art);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { 
+    res.status(500).json({ message: err.message }); 
+  }
 };
 
 exports.getArtwork = async (req, res) => {
   try {
-    // Check if this is a view-tracking request
     const incrementView = req.query.incrementView === 'true';
     
     const art = await Artwork.findById(req.params.id).populate('creator', 'name avatar');
     if (!art) return res.status(404).json({ message: 'Not found' });
     
-    // Only increment views if explicitly requested
     if (incrementView) {
       art.views += 1;
       await art.save();
     }
     
     res.json(art);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { 
+    res.status(500).json({ message: err.message }); 
+  }
 };
 
-// NEW: Separate endpoint for incrementing views
 exports.incrementView = async (req, res) => {
   try {
-    // Use findOneAndUpdate with $inc for atomic operation
     const art = await Artwork.findByIdAndUpdate(
       req.params.id,
       { $inc: { views: 1 } },
@@ -54,7 +65,6 @@ exports.incrementView = async (req, res) => {
     
     if (!art) return res.status(404).json({ message: 'Not found' });
     
-    // Emit socket event for real-time updates
     const io = req.app.get('io');
     if (io) io.to(req.params.id.toString()).emit('view-updated', { views: art.views });
     
@@ -76,7 +86,9 @@ exports.listArtworks = async (req, res) => {
     else query = query.sort({ createdAt: -1 });
     const results = await query.skip((page-1)*limit).limit(parseInt(limit));
     res.json(results);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { 
+    res.status(500).json({ message: err.message }); 
+  }
 };
 
 exports.likeArtwork = async (req, res) => {
@@ -87,9 +99,50 @@ exports.likeArtwork = async (req, res) => {
     if (idx === -1) art.likes.push(req.user._id);
     else art.likes.splice(idx, 1);
     await art.save();
-    // emit socket event using app's io if present
+    
     const io = req.app.get('io');
     if (io) io.to(art._id.toString()).emit('like-updated', { likes: art.likes.length });
     res.json({ likes: art.likes.length });
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { 
+    res.status(500).json({ message: err.message }); 
+  }
+};
+
+// Bookmark/Save artwork
+exports.bookmarkArtwork = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const artworkId = req.params.id;
+    const idx = user.bookmarks.findIndex(b => b.toString() === artworkId);
+    
+    let bookmarked = false;
+    if (idx === -1) {
+      user.bookmarks.push(artworkId);
+      bookmarked = true;
+    } else {
+      user.bookmarks.splice(idx, 1);
+      bookmarked = false;
+    }
+    
+    await user.save();
+
+    // Emit socket event
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('bookmark-updated', { 
+        userId: req.user._id.toString(),
+        artworkId,
+        bookmarked
+      });
+    }
+
+    res.json({ 
+      bookmarked,
+      bookmarksCount: user.bookmarks.length 
+    });
+  } catch (err) { 
+    res.status(500).json({ message: err.message }); 
+  }
 };

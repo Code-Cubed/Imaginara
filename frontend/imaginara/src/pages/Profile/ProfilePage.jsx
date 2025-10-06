@@ -1,46 +1,344 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User } from "lucide-react";
+import { User, Trash2, Heart, MessageCircle, Eye } from "lucide-react";
+import { io } from "socket.io-client";
 import LeftBar from "../../components/leftBar/LeftBar";
+import "./ProfilePage.css";
 
 const ProfilePage = ({ onLogout }) => {
   const navigate = useNavigate();
-
-  
+  const [activeTab, setActiveTab] = useState("uploads");
+  const [profile, setProfile] = useState(null);
   const [uploads, setUploads] = useState([]);
   const [bookmarks, setBookmarks] = useState([]);
   const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [socket, setSocket] = useState(null);
 
-  // Sample function to add dummy upload
-  const addUpload = () => {
-    const newUpload = {
-      id: Date.now(),
-      title: "New Artwork " + (uploads.length + 1),
-      type: "ART",
-      color: "#F87171",
-      likes: 0,
-      comments: 0,
+  // Get userId from token
+  const getUserIdFromToken = () => {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload.id;
+    } catch (err) {
+      return null;
+    }
+  };
+
+  const userId = getUserIdFromToken();
+
+  useEffect(() => {
+    if (!userId) {
+      navigate("/login");
+      return;
+    }
+
+    // Initialize socket connection
+    const newSocket = io("http://localhost:8000");
+    setSocket(newSocket);
+
+    // Join user's personal room
+    newSocket.emit("join-user", userId);
+
+    // Listen for real-time updates
+    newSocket.on("artwork-uploaded", (data) => {
+      if (data.userId === userId) {
+        fetchUploads();
+      }
+    });
+
+    newSocket.on("bookmark-updated", (data) => {
+      if (data.userId === userId) {
+        fetchBookmarks();
+      }
+    });
+
+    return () => {
+      newSocket.emit("leave-user", userId);
+      newSocket.close();
     };
-    setUploads([newUpload, ...uploads]);
+  }, [userId]);
+
+  useEffect(() => {
+    if (userId) {
+      fetchProfile();
+      fetchUploads();
+      fetchBookmarks();
+      fetchComments();
+    }
+  }, [userId]);
+
+  const fetchProfile = async () => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/users/${userId}/profile`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Failed to fetch profile");
+      setProfile(data);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
-  // Sample function to add dummy bookmark
-  const addBookmark = () => {
-    if (uploads.length === 0) return;
-    const newBookmark = uploads[0];
-    setBookmarks([newBookmark, ...bookmarks]);
+  const fetchUploads = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:8000/api/users/${userId}/uploads`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Failed to fetch uploads");
+      setUploads(data.artworks || []);
+      setError("");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Sample function to add dummy comment
-  const addComment = () => {
-    if (uploads.length === 0) return;
-    const newComment = {
-      id: Date.now(),
-      content: "This is a new comment!",
-      post: uploads[0].title,
-    };
-    setComments([newComment, ...comments]);
+  const fetchBookmarks = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const response = await fetch(`http://localhost:8000/api/users/${userId}/bookmarks`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Failed to fetch bookmarks");
+      setBookmarks(data.artworks || []);
+      setError("");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const fetchComments = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:8000/api/users/${userId}/comments`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Failed to fetch comments");
+      setComments(data.comments || []);
+      setError("");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      "⚠️ WARNING: This will permanently delete your account and ALL associated data including artworks, comments, and bookmarks. This action cannot be undone. Are you sure?"
+    );
+
+    if (!confirmed) return;
+
+    const doubleConfirm = window.confirm("Are you ABSOLUTELY sure? Type DELETE to confirm.");
+    if (!doubleConfirm) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:8000/api/users/account", {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.message || "Failed to delete account");
+
+      alert("Account deleted successfully");
+      localStorage.removeItem("token");
+      navigate("/login");
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleArtworkClick = (artworkId) => {
+    navigate(`/artwork/${artworkId}`);
+  };
+
+  const handleRemoveBookmark = async (artworkId, e) => {
+    e.stopPropagation();
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`http://localhost:8000/api/artworks/${artworkId}/bookmark`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error("Failed to remove bookmark");
+
+      // Remove from local state
+      setBookmarks(bookmarks.filter((b) => b._id !== artworkId));
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const renderArtworkCard = (artwork, showRemoveBookmark = false) => (
+    <div
+      key={artwork._id}
+      className="artwork-card"
+      onClick={() => handleArtworkClick(artwork._id)}
+    >
+      <div className="artwork-image-container">
+        {artwork.mediaType === "image" ? (
+          <img
+            src={artwork.thumbnailUrl || artwork.mediaUrl}
+            alt={artwork.title}
+            className="artwork-image"
+          />
+        ) : artwork.mediaType === "video" ? (
+          <video src={artwork.mediaUrl} className="artwork-image" muted />
+        ) : (
+          <div className="artwork-placeholder">
+            <span className="media-icon">
+              {artwork.mediaType === "audio" ? "🎵" : "📄"}
+            </span>
+          </div>
+        )}
+        <div className="artwork-overlay">
+          <div className="artwork-stats">
+            <span>
+              <Heart size={16} /> {artwork.likes?.length || 0}
+            </span>
+            <span>
+              <Eye size={16} /> {artwork.views || 0}
+            </span>
+            <span>
+              <MessageCircle size={16} /> {artwork.commentsCount || 0}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="artwork-info">
+        <h3 className="artwork-title">{artwork.title}</h3>
+        {artwork.creator && (
+          <p className="artwork-creator">By {artwork.creator.name}</p>
+        )}
+        {artwork.category && (
+          <span className="artwork-category">{artwork.category}</span>
+        )}
+        {showRemoveBookmark && (
+          <button
+            onClick={(e) => handleRemoveBookmark(artwork._id, e)}
+            className="remove-bookmark-btn"
+          >
+            Remove
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading...</p>
+        </div>
+      );
+    }
+
+    if (error) {
+      return <div className="alert alert-error">{error}</div>;
+    }
+
+    switch (activeTab) {
+      case "uploads":
+        return uploads.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">🎨</div>
+            <h3>No uploads yet</h3>
+            <p>Share your creative work with the community!</p>
+            <button
+              onClick={() => navigate("/addartwork")}
+              className="btn btn-primary"
+            >
+              Upload Artwork
+            </button>
+          </div>
+        ) : (
+          <div className="artworks-grid">
+            {uploads.map((artwork) => renderArtworkCard(artwork))}
+          </div>
+        );
+
+      case "bookmarks":
+        return bookmarks.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">🔖</div>
+            <h3>No bookmarks yet</h3>
+            <p>Save artworks you love to view them later!</p>
+          </div>
+        ) : (
+          <div className="artworks-grid">
+            {bookmarks.map((artwork) => renderArtworkCard(artwork, true))}
+          </div>
+        );
+
+      case "comments":
+        return comments.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">💬</div>
+            <h3>No comments yet</h3>
+            <p>Start engaging with the community!</p>
+          </div>
+        ) : (
+          <div className="comments-list">
+            {comments.map((comment) => (
+              <div
+                key={comment._id}
+                className="comment-card"
+                onClick={() => handleArtworkClick(comment.artwork._id)}
+              >
+                <div className="comment-artwork-thumb">
+                  {comment.artwork?.thumbnailUrl && (
+                    <img
+                      src={comment.artwork.thumbnailUrl}
+                      alt={comment.artwork.title}
+                    />
+                  )}
+                </div>
+                <div className="comment-content">
+                  <p className="comment-text">{comment.text}</p>
+                  <p className="comment-meta">
+                    On: <strong>{comment.artwork?.title || "Unknown"}</strong>
+                    <span className="comment-date">
+                      {new Date(comment.createdAt).toLocaleDateString()}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  if (!profile) {
+    return (
+      <div className="flex min-h-screen bg-gray-100">
+        <LeftBar onLogout={onLogout} />
+        <div className="flex-1 p-6">
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Loading profile...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -48,91 +346,74 @@ const ProfilePage = ({ onLogout }) => {
 
       <main className="flex-1 p-4 sm:p-6">
         <div className="max-w-6xl mx-auto">
-
-          
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-10">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-blue-600 rounded-full flex items-center justify-center text-white">
-              <User size={32} />
+          {/* Profile Header */}
+          <div className="profile-header">
+            <div className="profile-avatar">
+              {profile.user?.avatar ? (
+                <img src={profile.user.avatar} alt={profile.user.name} />
+              ) : (
+                <User size={48} />
+              )}
             </div>
-            <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-1">User Profile</h1>
-              <p className="text-sm sm:text-base text-gray-500">User ID: <span className="font-mono">02S54958894937359006</span></p>
+            <div className="profile-info">
+              <h1 className="profile-name">{profile.user?.name || "User"}</h1>
+              <p className="profile-email">{profile.user?.email}</p>
+              {profile.user?.bio && <p className="profile-bio">{profile.user.bio}</p>}
 
-              
-              <div className="flex gap-2 mt-2">
-                <button onClick={addUpload} className="px-3 py-1 bg-green-500 text-white rounded">Add Upload</button>
-                <button onClick={addBookmark} className="px-3 py-1 bg-yellow-500 text-white rounded">Add Bookmark</button>
-                <button onClick={addComment} className="px-3 py-1 bg-blue-500 text-white rounded">Add Comment</button>
+              {/* Stats */}
+              <div className="profile-stats">
+                <div className="stat-item">
+                  <span className="stat-value">{profile.stats?.uploads || 0}</span>
+                  <span className="stat-label">Uploads</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-value">{profile.stats?.followers || 0}</span>
+                  <span className="stat-label">Followers</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-value">{profile.stats?.following || 0}</span>
+                  <span className="stat-label">Following</span>
+                </div>
               </div>
             </div>
           </div>
 
-          
-          <section className="mb-10">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">Your Uploads ({uploads.length})</h2>
-            {uploads.length === 0 ? (
-              <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
-                <p className="text-gray-500 italic">You haven't uploaded anything yet.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {uploads.map((item) => (
-                  <div key={item.id} className="rounded-xl p-4 text-white shadow-md hover:scale-[1.03] transition-transform duration-300" style={{ backgroundColor: item.color }}>
-                    <h3 className="text-lg font-bold mb-2">{item.title}</h3>
-                    <div className="flex justify-between text-sm opacity-90">
-                      <span> {item.likes}</span>
-                      <span> {item.comments}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+          {/* Tabs */}
+          <div className="profile-tabs">
+            <button
+              className={`tab ${activeTab === "uploads" ? "active" : ""}`}
+              onClick={() => setActiveTab("uploads")}
+            >
+              Uploads ({uploads.length})
+            </button>
+            <button
+              className={`tab ${activeTab === "bookmarks" ? "active" : ""}`}
+              onClick={() => setActiveTab("bookmarks")}
+            >
+              Bookmarks ({bookmarks.length})
+            </button>
+            <button
+              className={`tab ${activeTab === "comments" ? "active" : ""}`}
+              onClick={() => setActiveTab("comments")}
+            >
+              Comments ({comments.length})
+            </button>
+          </div>
 
-          
-          <section className="mb-10">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">Saved Items ({bookmarks.length})</h2>
-            {bookmarks.length === 0 ? (
-              <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
-                <p className="text-gray-500 italic">You haven't saved any items yet.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {bookmarks.map((item) => (
-                  <div key={item.id} className="rounded-xl p-4 text-white shadow-md hover:scale-[1.03] transition-transform duration-300" style={{ backgroundColor: item.color }}>
-                    <h3 className="text-lg font-bold mb-2">{item.title}</h3>
-                    <div className="flex justify-between text-sm opacity-90">
-                      <span> {item.likes}</span>
-                      <span> {item.comments}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+          {/* Content */}
+          <div className="profile-content">{renderContent()}</div>
 
-          
-          <section className="mb-10">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">Your Comments ({comments.length})</h2>
-            {comments.length === 0 ? (
-              <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
-                <p className="text-gray-500 italic">You haven't commented yet.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {comments.map((comment) => (
-                  <div key={comment.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                    <p className="text-gray-700">{comment.content}</p>
-                    <p className="text-xs text-gray-500 mt-2">On: <span className="font-medium">{comment.post}</span></p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          
-          <div className="flex justify-center mt-6">
-            <button onClick={() => navigate("/home")} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Back to Home</button>
+          {/* Danger Zone */}
+          <div className="danger-zone">
+            <h3 className="danger-title">Danger Zone</h3>
+            <p className="danger-description">
+              Once you delete your account, there is no going back. All your artworks,
+              comments, and data will be permanently deleted.
+            </p>
+            <button onClick={handleDeleteAccount} className="btn-danger">
+              <Trash2 size={18} />
+              Delete Account
+            </button>
           </div>
         </div>
       </main>

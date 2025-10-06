@@ -1,33 +1,53 @@
-// ArtworkDetail.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
+import { Bookmark, BookmarkCheck } from 'lucide-react';
 import LeftBar from '../../components/leftBar/LeftBar';
 import './ArtworkDetail.css';
 import TopBar from '../../components/topBar/topBar';
+
 const ArtworkDetail = ({ onLogout }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [artwork, setArtwork] = useState(null);
+  const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [comment, setComment] = useState('');
   const [socket, setSocket] = useState(null);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+
+  // Get current user ID
+  const getUserIdFromToken = () => {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.id;
+    } catch (err) {
+      return null;
+    }
+  };
+
+  const currentUserId = getUserIdFromToken();
 
   useEffect(() => {
-    // Initialize socket connection
     const newSocket = io('http://localhost:8000');
     setSocket(newSocket);
 
-    // Join artwork room
     newSocket.emit('join-artwork', id);
 
-    // Listen for real-time updates
-    newSocket.on('new-comment', () => {
-      setArtwork((prev) => ({
-        ...prev,
-        commentsCount: prev.commentsCount + 1
-      }));
+    // Only update comments from other users
+    newSocket.on('new-comment', (newComment) => {
+      // Check if this comment was posted by current user to avoid duplicates
+      if (newComment.user._id !== currentUserId) {
+        setComments((prev) => [newComment, ...prev]);
+        setArtwork((prev) => ({
+          ...prev,
+          commentsCount: prev.commentsCount + 1
+        }));
+      }
     });
 
     newSocket.on('like-updated', (data) => {
@@ -37,7 +57,6 @@ const ArtworkDetail = ({ onLogout }) => {
       }));
     });
 
-    // Listen for view updates
     newSocket.on('view-updated', (data) => {
       setArtwork((prev) => ({
         ...prev,
@@ -45,12 +64,11 @@ const ArtworkDetail = ({ onLogout }) => {
       }));
     });
 
-    // Cleanup
     return () => {
       newSocket.emit('leave-artwork', id);
       newSocket.close();
     };
-  }, [id]);
+  }, [id, currentUserId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -58,14 +76,12 @@ const ArtworkDetail = ({ onLogout }) => {
     const loadArtwork = async () => {
       if (isMounted) {
         await fetchArtwork();
+        await fetchComments();
         
-        // Check if this artwork has been viewed in this session
         const viewedArtworks = JSON.parse(sessionStorage.getItem('viewedArtworks') || '[]');
         
         if (!viewedArtworks.includes(id)) {
-          // Track view only if not viewed in this session
           trackView();
-          // Mark as viewed in this session
           viewedArtworks.push(id);
           sessionStorage.setItem('viewedArtworks', JSON.stringify(viewedArtworks));
         }
@@ -86,7 +102,6 @@ const ArtworkDetail = ({ onLogout }) => {
       });
       const data = await response.json();
       
-      // Update the artwork state with new view count
       if (response.ok && data.views) {
         setArtwork(prev => prev ? { ...prev, views: data.views } : prev);
       }
@@ -98,7 +113,6 @@ const ArtworkDetail = ({ onLogout }) => {
   const fetchArtwork = async () => {
     try {
       setLoading(true);
-      // Don't increment view when fetching - we'll do it separately
       const response = await fetch(`http://localhost:8000/api/artworks/${id}`);
       const data = await response.json();
 
@@ -107,6 +121,13 @@ const ArtworkDetail = ({ onLogout }) => {
       }
 
       setArtwork(data);
+      
+      // Check if current user liked this artwork
+      if (currentUserId && data.likes) {
+        const liked = data.likes.some(like => like.toString() === currentUserId);
+        setIsLiked(liked);
+      }
+
       setError('');
     } catch (err) {
       setError(err.message);
@@ -115,7 +136,28 @@ const ArtworkDetail = ({ onLogout }) => {
     }
   };
 
+  const fetchComments = async () => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/comments/${id}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch comments');
+      }
+
+      setComments(data);
+    } catch (err) {
+      console.error('Failed to fetch comments:', err);
+    }
+  };
+
   const handleLike = async () => {
+    if (!currentUserId) {
+      alert('Please login to like artworks');
+      navigate('/login');
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:8000/api/artworks/${id}/like`, {
@@ -131,15 +173,51 @@ const ArtworkDetail = ({ onLogout }) => {
         throw new Error(data.message || 'Failed to like artwork');
       }
 
-      // Update local state
       setArtwork((prev) => ({
         ...prev,
         likes: { length: data.likes }
       }));
+      
+      setIsLiked(!isLiked);
 
-      // Emit socket event
       if (socket) {
         socket.emit('like-updated', { artworkId: id, likes: data.likes });
+      }
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleBookmark = async () => {
+    if (!currentUserId) {
+      alert('Please login to bookmark artworks');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8000/api/artworks/${id}/bookmark`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to bookmark artwork');
+      }
+
+      setIsBookmarked(data.bookmarked);
+
+      if (socket) {
+        socket.emit('bookmark-updated', { 
+          userId: currentUserId, 
+          artworkId: id, 
+          bookmarked: data.bookmarked 
+        });
       }
     } catch (err) {
       alert(err.message);
@@ -149,18 +227,23 @@ const ArtworkDetail = ({ onLogout }) => {
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
     
+    if (!currentUserId) {
+      alert('Please login to comment');
+      navigate('/login');
+      return;
+    }
+    
     if (!comment.trim()) return;
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8000/api/comments`, {
+      const response = await fetch(`http://localhost:8000/api/comments/${id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          artworkId: id,
           text: comment
         })
       });
@@ -171,12 +254,12 @@ const ArtworkDetail = ({ onLogout }) => {
         throw new Error(data.message || 'Failed to post comment');
       }
 
-      // Emit socket event
       if (socket) {
         socket.emit('comment-added', { artworkId: id, comment: data });
       }
 
       setComment('');
+      setComments([data, ...comments]);
       setArtwork((prev) => ({
         ...prev,
         commentsCount: prev.commentsCount + 1
@@ -330,8 +413,25 @@ const ArtworkDetail = ({ onLogout }) => {
               </div>
 
               <div className="action-buttons">
-                <button onClick={handleLike} className="btn btn-like">
-                  ❤️ Like
+                <button 
+                  onClick={handleLike} 
+                  className={`btn btn-like ${isLiked ? 'liked' : ''}`}
+                >
+                  {isLiked ? '❤️ Liked' : '🤍 Like'}
+                </button>
+                <button 
+                  onClick={handleBookmark} 
+                  className={`btn btn-bookmark ${isBookmarked ? 'bookmarked' : ''}`}
+                >
+                  {isBookmarked ? (
+                    <>
+                      <BookmarkCheck size={18} /> Bookmarked
+                    </>
+                  ) : (
+                    <>
+                      <Bookmark size={18} /> Bookmark
+                    </>
+                  )}
                 </button>
                 <button className="btn btn-share">
                   🔗 Share
@@ -340,7 +440,7 @@ const ArtworkDetail = ({ onLogout }) => {
 
               {/* Comments Section */}
               <div className="comments-section">
-                <h3>Comments</h3>
+                <h3>Comments ({comments.length})</h3>
                 <form onSubmit={handleCommentSubmit} className="comment-form">
                   <textarea
                     value={comment}
@@ -353,6 +453,31 @@ const ArtworkDetail = ({ onLogout }) => {
                     Post Comment
                   </button>
                 </form>
+
+                <div className="comments-list">
+                  {comments.map((cmt) => (
+                    <div key={cmt._id} className="comment-item">
+                      <div className="comment-avatar">
+                        {cmt.user?.avatar ? (
+                          <img src={cmt.user.avatar} alt={cmt.user.name} />
+                        ) : (
+                          <div className="avatar-placeholder">
+                            {cmt.user?.name?.charAt(0) || 'U'}
+                          </div>
+                        )}
+                      </div>
+                      <div className="comment-content">
+                        <div className="comment-header">
+                          <span className="comment-author">{cmt.user?.name || 'Anonymous'}</span>
+                          <span className="comment-date">
+                            {new Date(cmt.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="comment-text">{cmt.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
