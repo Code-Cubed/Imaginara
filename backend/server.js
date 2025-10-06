@@ -1,4 +1,4 @@
-// Load environment variables first
+// server.js
 require('dotenv').config();
 
 const express = require('express');
@@ -8,6 +8,7 @@ const connectDB = require('./config/db');
 const artworkRoutes = require('./routes/artworks');
 const authRoutes = require('./routes/auth');
 const commentRoutes = require('./routes/comments');
+const userRoutes = require('./routes/users');
 const { Server } = require('socket.io');
 
 const app = express();
@@ -16,13 +17,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ Connect to MongoDB
+// Connect to MongoDB
 connectDB();
 
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/artworks', artworkRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/api/users', userRoutes);
 
 // Create HTTP server
 const server = http.createServer(app);
@@ -40,13 +42,33 @@ app.set('io', io);
 io.on('connection', (socket) => {
   console.log('Socket connected:', socket.id);
 
-  socket.on('join-artwork', (artworkId) => socket.join(artworkId));
-  socket.on('leave-artwork', (artworkId) => socket.leave(artworkId));
+  // Join user's personal room
+  socket.on('join-user', (userId) => {
+    socket.join(`user-${userId}`);
+    console.log(`User ${userId} joined personal room`);
+  });
 
+  // Leave user's personal room
+  socket.on('leave-user', (userId) => {
+    socket.leave(`user-${userId}`);
+  });
+
+  // Join artwork room
+  socket.on('join-artwork', (artworkId) => {
+    socket.join(artworkId);
+  });
+
+  // Leave artwork room
+  socket.on('leave-artwork', (artworkId) => {
+    socket.leave(artworkId);
+  });
+
+  // Handle comment events
   socket.on('comment-added', (data) => {
     io.to(data.artworkId).emit('new-comment', data.comment);
   });
 
+  // Handle like events
   socket.on('like-updated', (data) => {
     io.to(data.artworkId).emit('like-updated', { likes: data.likes });
   });

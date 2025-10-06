@@ -8,7 +8,8 @@ const artworkController = require('../controllers/artworkController');
 router.post('/', auth, upload.single('file'), artworkController.createArtwork);
 router.get('/', artworkController.listArtworks);
 router.get('/:id', artworkController.getArtwork);
-router.post('/:id/view', artworkController.incrementView); // NEW: Separate view endpoint
+router.post('/:id/view', artworkController.incrementView);
 router.post('/:id/like', auth, artworkController.likeArtwork);
+router.post('/:id/bookmark', auth, artworkController.bookmarkArtwork);
 
 module.exports = router;
