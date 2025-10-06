@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LeftBar from '../../components/leftBar/LeftBar';
 import './AddArtwork.css';
-
+import TopBar from '../../components/topBar/topBar';
 const AddArtwork = ({ onLogout }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -146,6 +146,7 @@ const AddArtwork = ({ onLogout }) => {
       <LeftBar onLogout={onLogout} />
       
       <div className="main-content">
+        <TopBar />
         <div className="upload-container">
           <div className="upload-header">
             <h1 className="upload-title">Upload Artwork</h1>

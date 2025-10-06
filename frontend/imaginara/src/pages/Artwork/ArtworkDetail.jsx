@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import LeftBar from '../../components/leftBar/LeftBar';
 import './ArtworkDetail.css';
-
+import TopBar from '../../components/topBar/topBar';
 const ArtworkDetail = ({ onLogout }) => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -191,6 +191,7 @@ const ArtworkDetail = ({ onLogout }) => {
       <div className="page-container">
         <LeftBar onLogout={onLogout} />
         <div className="main-content">
+          <TopBar/>
           <div className="loading-container">
             <div className="loading-spinner"></div>
             <p>Loading artwork...</p>
@@ -205,6 +206,7 @@ const ArtworkDetail = ({ onLogout }) => {
       <div className="page-container">
         <LeftBar onLogout={onLogout} />
         <div className="main-content">
+          <TopBar/>
           <div className="error-container">
             <h2>Error</h2>
             <p>{error || 'Artwork not found'}</p>
@@ -222,6 +224,7 @@ const ArtworkDetail = ({ onLogout }) => {
       <LeftBar onLogout={onLogout} />
       
       <div className="main-content">
+        <TopBar />
         <div className="detail-container">
           <button onClick={() => navigate('/home')} className="back-button">
             ← Back to Gallery

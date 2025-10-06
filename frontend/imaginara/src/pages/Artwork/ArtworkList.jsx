@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LeftBar from '../../components/leftBar/LeftBar';
 import './ArtworkList.css';
-
+import TopBar from '../../components/topBar/topBar';
 const ArtworkList = ({ onLogout }) => {
   const navigate = useNavigate();
   const [artworks, setArtworks] = useState([]);
@@ -67,6 +67,7 @@ const ArtworkList = ({ onLogout }) => {
       <LeftBar onLogout={onLogout} />
       
       <div className="main-content">
+        <TopBar />
         <div className="gallery-container">
           {/* Header */}
           <div className="gallery-header">

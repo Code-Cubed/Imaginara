@@ -5,10 +5,13 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Landing from './pages/Landing/Landing';
 import Login from './pages/Auth/login';
 import SignUp from './pages/Auth/signup';
-import ArtworkList from './pages/Artwork/ArtworkList';
+// Renaming 'ArtworkList' to 'HomePage' for clarity in this context (the gallery from the screenshot)
+import HomePage from './pages/Artwork/ArtworkList'; 
 import ArtworkDetail from './pages/Artwork/ArtworkDetail';
 import AddArtwork from './pages/Artwork/Addartwork';
-import Home from './pages/Home/Home';
+// New/Renamed Components
+import ExplorePage from './pages/Home/ExplorePage'; // Renamed Home component
+import ProfilePage from './pages/Profile/ProfilePage'; // Your ProfilePage component
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -85,7 +88,27 @@ function App() {
           path="/home"
           element={
             isAuthenticated ? (
-              <ArtworkList onLogout={handleLogout} />
+              <HomePage onLogout={handleLogout} /> // Original ArtworkList
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/explore"
+          element={
+            isAuthenticated ? (
+              <ExplorePage onLogout={handleLogout} /> // New Explore Page
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            isAuthenticated ? (
+              <ProfilePage onLogout={handleLogout} /> // New Profile Page
             ) : (
               <Navigate to="/login" replace />
             )
