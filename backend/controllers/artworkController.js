@@ -1,3 +1,4 @@
+// controllers/artworkController.js
 const Artwork = require('../models/Artwork');
 const Comment = require('../models/Comment');
 const { uploadToCloudinary } = require('../middlewares/upload');
@@ -25,12 +26,42 @@ exports.createArtwork = async (req, res) => {
 
 exports.getArtwork = async (req, res) => {
   try {
+    // Check if this is a view-tracking request
+    const incrementView = req.query.incrementView === 'true';
+    
     const art = await Artwork.findById(req.params.id).populate('creator', 'name avatar');
     if (!art) return res.status(404).json({ message: 'Not found' });
-    art.views += 1;
-    await art.save();
+    
+    // Only increment views if explicitly requested
+    if (incrementView) {
+      art.views += 1;
+      await art.save();
+    }
+    
     res.json(art);
   } catch (err) { res.status(500).json({ message: err.message }); }
+};
+
+// NEW: Separate endpoint for incrementing views
+exports.incrementView = async (req, res) => {
+  try {
+    // Use findOneAndUpdate with $inc for atomic operation
+    const art = await Artwork.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { views: 1 } },
+      { new: true, select: 'views' }
+    );
+    
+    if (!art) return res.status(404).json({ message: 'Not found' });
+    
+    // Emit socket event for real-time updates
+    const io = req.app.get('io');
+    if (io) io.to(req.params.id.toString()).emit('view-updated', { views: art.views });
+    
+    res.json({ views: art.views, success: true });
+  } catch (err) { 
+    res.status(500).json({ message: err.message }); 
+  }
 };
 
 exports.listArtworks = async (req, res) => {
