@@ -49,7 +49,7 @@ const ArtworkList = ({ onLogout }) => {
 
   return (
     <div className="page-container flex min-h-screen bg-gray-100">
-      <LeftBar onLogout={onLogout} />
+      {/* <LeftBar onLogout={onLogout} /> */}
 
       <div className="flex-1 flex flex-col">
         {/* TopBar is placed here */}
