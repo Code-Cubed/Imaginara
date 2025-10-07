@@ -12,28 +12,26 @@
   transition: all 0.3s ease;
 }
 
-/* Profile header relative positioning */
 .profile-header {
-  position: relative; /* important for top-right absolute positioning */
+  position: relative; 
   display: flex;
   align-items: center;
   gap: 2rem;
   background: #ffffff;
-  padding: 2.5rem;
+  padding: 3rem 2.5rem 2.5rem 2.5rem; 
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  margin-top: 3rem; 
   margin-bottom: 2rem;
   transition: all 0.3s ease;
 }
 
-/* Top-right stacked buttons */
-/* Icon spacing */
 .avatar-actions-top .btn .btn-icon {
   margin-right: 0.4rem;
   vertical-align: middle;
 }
 
-/* Top-right stacked buttons */
+
 .avatar-actions-top {
   position: absolute;
   top: 10px;
@@ -44,7 +42,7 @@
   align-items: flex-end;
 }
 
-/* Uniform button style */
+
 .avatar-actions-top .btn {
   padding: 0.35rem 0.7rem;
   font-size: 0.75rem;

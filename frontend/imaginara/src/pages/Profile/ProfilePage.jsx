@@ -556,7 +556,7 @@ const handleRemoveAvatar = async () => {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <LeftBar onLogout={onLogout} />
+      
 
       <main className="flex-1 p-4 sm:p-6">
         <div className="max-w-6xl mx-auto">

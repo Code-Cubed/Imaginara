@@ -283,6 +283,35 @@
   color: #666;
   margin-bottom: 24px;
 }
+/* Comment avatar container */
+.comment-avatar {
+  width: 36px; /* smaller than creator avatar */
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Comment avatar image */
+.comment-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Placeholder for users without avatar */
+.comment-avatar .avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #9c27b0, #e91e63);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: bold;
+}
+
 
 /* Responsive Adjustments */
 @media (max-width: 968px) {

@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 import Landing from "./pages/Landing/Landing";
@@ -24,7 +23,7 @@ function App() {
 }
 
 function AppContent() {
-  const { theme } = useContext(ThemeContext);
+  const { theme } = useContext(ThemeContext); // ✅ added missing import
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -47,6 +46,10 @@ function AppContent() {
     );
   }
 
+  // Protected route wrapper
+  const ProtectedRoute = ({ children }) =>
+    isAuthenticated ? children : <Navigate to="/login" replace />;
+
   return (
     <div data-theme={theme} className="min-h-screen">
       <Router>
@@ -68,40 +71,59 @@ function AppContent() {
           {/* Protected Routes */}
           <Route
             path="/home"
-            element={isAuthenticated ? <ProtectedLayout onLogout={handleLogout}><HomePage /></ProtectedLayout> : <Navigate to="/login" replace />}
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout onLogout={handleLogout}><HomePage /></ProtectedLayout>
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/explore"
-            element={isAuthenticated ? <ProtectedLayout onLogout={handleLogout}><ExplorePage /></ProtectedLayout> : <Navigate to="/login" replace />}
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout onLogout={handleLogout}><ExplorePage /></ProtectedLayout>
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/profile"
-            element={isAuthenticated ? <ProtectedLayout onLogout={handleLogout}><ProfilePage /></ProtectedLayout> : <Navigate to="/login" replace />}
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout onLogout={handleLogout}><ProfilePage /></ProtectedLayout>
+              </ProtectedRoute>
+            }
           />
-  
-        <Route
-          path="/chatbot"
-          element={
-            isAuthenticated ? (
-              <ChatBot onLogout={handleLogout} />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-
-
-        <Route
+          <Route
+            path="/chatbot"
+            element={
+              <ProtectedRoute>
+                <ChatBot onLogout={handleLogout} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/addartwork"
-            element={isAuthenticated ? <ProtectedLayout onLogout={handleLogout}><AddArtwork /></ProtectedLayout> : <Navigate to="/login" replace />}
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout onLogout={handleLogout}><AddArtwork /></ProtectedLayout>
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/artwork/:id"
-            element={isAuthenticated ? <ProtectedLayout onLogout={handleLogout}><ArtworkDetail /></ProtectedLayout> : <Navigate to="/login" replace />}
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout onLogout={handleLogout}><ArtworkDetail /></ProtectedLayout>
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/settings"
-            element={isAuthenticated ? <ProtectedLayout onLogout={handleLogout}><Settings onLogout={handleLogout} /></ProtectedLayout> : <Navigate to="/login" replace />}
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout onLogout={handleLogout}><Settings onLogout={handleLogout} /></ProtectedLayout>
+              </ProtectedRoute>
+            }
           />
 
           {/* Default & Catch-all */}
