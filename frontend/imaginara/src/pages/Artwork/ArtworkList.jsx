@@ -49,7 +49,7 @@ const ArtworkList = ({ onLogout }) => {
   const handleArtworkClick = (artworkId) => navigate(`/artwork/${artworkId}`);
 
   const {theme} = useContext(ThemeContext);
-
+  const textColor = theme === "dark" ? "#f3f4f6" : "#22223b";
   return (
     <div data-theme={theme} className=" flex min-h-screen ">
       {/* <LeftBar onLogout={onLogout} /> */}
@@ -121,10 +121,13 @@ const ArtworkList = ({ onLogout }) => {
               {artworks.map((artwork) => (
                 <div key={artwork._id} className="artwork-card" onClick={() => handleArtworkClick(artwork._id)}>
                   <div className="artwork-image-container">
+                const { theme } = useContext(ThemeContext);
+                const textColor = theme === "dark" ? "#f3f4f6" : "#22223b";
                     {artwork.mediaType === 'image' ? (
-                      <img src={artwork.thumbnailUrl || artwork.mediaUrl} alt={artwork.title} className="artwork-image" />
-                    ) : artwork.mediaType === 'video' ? (
-                      <video src={artwork.mediaUrl} className="artwork-image" muted />
+                      <div data-theme={theme} className=" flex min-h-screen " style={{ color: textColor }}>
+                        <img src={artwork.thumbnailUrl || artwork.mediaUrl} alt={artwork.title} className="artwork-image" />
+                        <video src={artwork.mediaUrl} className="artwork-image" muted />
+                      </div>
                     ) : (
                       <div className="artwork-placeholder">
                         <span className="media-icon">{artwork.mediaType === 'audio' ? '🎵' : '📄'}</span>
