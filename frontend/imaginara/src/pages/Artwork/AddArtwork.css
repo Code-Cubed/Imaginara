@@ -1,4 +1,6 @@
-
+/* ==============================
+   UPLOAD PAGE STYLING
+   ============================== */
 
 .page-container {
   display: flex;
@@ -92,7 +94,7 @@
   border: 2px solid #ddd;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
 }
 
 .media-type-option:hover {
@@ -102,11 +104,7 @@
 
 .media-type-option input[type="radio"] {
   margin-right: 8px;
-}
-
-.media-type-option input[type="radio"]:checked + span {
-  color: #9c27b0;
-  font-weight: 600;
+  accent-color: #9c27b0; /* modern styling for radio buttons */
 }
 
 .file-upload-area {
@@ -114,11 +112,12 @@
   border-radius: 12px;
   padding: 32px;
   text-align: center;
-  transition: border-color 0.3s;
+  transition: all 0.3s ease;
 }
 
 .file-upload-area:hover {
   border-color: #9c27b0;
+  background-color: rgba(156, 39, 176, 0.05);
 }
 
 .file-upload-label {
@@ -152,8 +151,9 @@
 
 .preview-image,
 .preview-video {
-  max-width: 100%;
+  width: 100%;
   max-height: 400px;
+  object-fit: contain;
   border-radius: 8px;
   margin-bottom: 16px;
 }
@@ -181,7 +181,7 @@
   border: 1px solid #ddd;
   border-radius: 8px;
   outline: none;
-  transition: border-color 0.3s;
+  transition: all 0.3s ease;
   font-family: inherit;
 }
 
@@ -190,11 +190,13 @@
 .form-textarea:focus {
   border-color: #9c27b0;
   box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.1);
+  outline: 2px solid rgba(156, 39, 176, 0.3);
 }
 
 .form-textarea {
   resize: vertical;
   min-height: 120px;
+  max-height: 300px;
 }
 
 .form-actions {
@@ -211,7 +213,7 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
 }
 
 .btn-secondary {

@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
     "axios": "^1.12.2",
+    "daisyui": "^5.1.27",
     "emoji-picker-react": "^4.14.0",
     "imagekitio-react": "^4.3.0",
     "lucide-react": "^0.544.0",
