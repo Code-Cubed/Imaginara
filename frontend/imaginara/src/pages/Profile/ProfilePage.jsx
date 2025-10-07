@@ -18,6 +18,10 @@ const ProfilePage = ({ onLogout }) => {
   const [socket, setSocket] = useState(null);
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editedCommentText, setEditedCommentText] = useState('');
+  const [newAvatar, setNewAvatar] = useState(null);
+const [name, setName] = useState('');
+const [bio, setBio] = useState('');
+
 
   // Get userId from token
   const getUserIdFromToken = () => {
@@ -74,6 +78,12 @@ const ProfilePage = ({ onLogout }) => {
       fetchComments();
     }
   }, [userId]);
+useEffect(() => {
+  if (profile?.user) {
+    setName(profile.user.name || '');
+    setBio(profile.user.bio || '');
+  }
+}, [profile]);
 
   const fetchProfile = async () => {
   try {
@@ -249,6 +259,54 @@ const ProfilePage = ({ onLogout }) => {
       alert(err.message);
     }
   };
+ const handleAvatarChange = (e) => {
+  const file = e.target.files[0];
+  if (file) setNewAvatar(file);
+};
+
+const handleUpdateProfile = async () => {
+  const token = localStorage.getItem("token");
+  const formData = new FormData();
+  formData.append("name", name);
+  if (newAvatar) formData.append("avatar", newAvatar);
+
+  try {
+    const response = await fetch("http://localhost:8000/api/users/update", {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Failed to update profile");
+
+    setProfile((prev) => ({ ...prev, user: data.user }));
+    localStorage.setItem("user", JSON.stringify(data.user));
+    alert("Profile updated successfully!");
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
+const handleRemoveAvatar = async () => {
+  const token = localStorage.getItem("token");
+
+  try {
+    const response = await fetch("http://localhost:8000/api/users/remove-avatar", {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Failed to remove avatar");
+
+    setProfile((prev) => ({ ...prev, user: data.user }));
+    localStorage.setItem("user", JSON.stringify(data.user));
+    alert("Avatar removed successfully!");
+  } catch (err) {
+    alert(err.message);
+  }
+};
 
   const handleArtworkClick = (artworkId) => {
     navigate(`/artwork/${artworkId}`);
@@ -503,36 +561,57 @@ const ProfilePage = ({ onLogout }) => {
       <main className="flex-1 p-4 sm:p-6">
         <div className="max-w-6xl mx-auto">
           {/* Profile Header */}
-          <div className="profile-header">
-            <div className="profile-avatar">
-              {profile.user?.avatar ? (
-                <img src={profile.user.avatar} alt={profile.user.name} />
-              ) : (
-                <User size={48} />
-              )}
-            </div>
-            <div className="profile-info">
-              <h1 className="profile-name">{profile.user?.name || "User"}</h1>
-              <p className="profile-email">{profile.user?.email}</p>
-              {profile.user?.bio && <p className="profile-bio">{profile.user.bio}</p>}
+          <div className="profile-header"> <div className="profile-avatar"> 
+            {profile.user?.avatar ? 
+          ( <img src={profile.user.avatar} alt={profile.user.name} /> ) : ( <User size={48} /> )} 
 
-              {/* Stats */}
-              <div className="profile-stats">
-                <div className="stat-item">
-                  <span className="stat-value">{profile.stats?.uploads || 0}</span>
-                  <span className="stat-label">Uploads</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-value">{profile.stats?.followers || 0}</span>
-                  <span className="stat-label">Followers</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-value">{profile.stats?.following || 0}</span>
-                  <span className="stat-label">Following</span>
-                </div>
-              </div>
-            </div>
-          </div>
+   {/* Top-right corner stacked actions */}
+<div className="avatar-actions-top">
+  <label className="btn btn-outline">
+    <span className="btn-icon">✏️</span> Change
+    <input type="file" accept="image/*" onChange={handleAvatarChange} hidden />
+  </label>
+  <button onClick={handleRemoveAvatar} className="btn btn-danger">
+    <span className="btn-icon">🗑️</span> Remove
+  </button>
+  <button onClick={handleUpdateProfile} className="btn btn-primary">
+    <span className="btn-icon">💾</span> Save
+  </button>
+</div>
+
+
+  </div>
+
+  <div className="profile-info">
+    <input
+      type="text"
+      value={name}
+      onChange={(e) => setName(e.target.value)}
+      className="input input-bordered w-full max-w-xs"
+      placeholder="Your Name"
+    />
+    
+
+   
+
+    {/* Stats */}
+    <div className="profile-stats mt-4">
+      <div className="stat-item">
+        <span className="stat-value">{profile.stats?.uploads || 0}</span>
+        <span className="stat-label">Uploads</span>
+      </div>
+      <div className="stat-item">
+        <span className="stat-value">{profile.stats?.followers || 0}</span>
+        <span className="stat-label">Followers</span>
+      </div>
+      <div className="stat-item">
+        <span className="stat-value">{profile.stats?.following || 0}</span>
+        <span className="stat-label">Following</span>
+      </div>
+    </div>
+  </div>
+</div>
+
 
           {/* Tabs */}
           <div className="profile-tabs">

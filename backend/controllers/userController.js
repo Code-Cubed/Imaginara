@@ -182,22 +182,39 @@ exports.getUserProfile = async (req, res) => {
   }
 };
 
-exports.updateAvatar = async (req, res) => {
+// Update profile (name, bio, avatar)
+exports.updateProfile = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: 'No image provided' });
+    const updates = {};
 
-    // Upload to Cloudinary
-    const uploaded = await uploadToCloudinary(req.file.buffer, 'avatars');
+    if (req.body.name) updates.name = req.body.name;
+    
 
-    // Update user avatar
+    // Upload new avatar if provided
+    if (req.file) {
+      const uploaded = await uploadToCloudinary(req.file.buffer, 'avatars');
+      updates.avatar = uploaded.secure_url;
+    }
+
+    const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true }).select('-password');
+
+    res.json({ message: 'Profile updated successfully', user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Remove avatar
+exports.removeAvatar = async (req, res) => {
+  try {
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { avatar: uploaded.secure_url },
+      { avatar: '' },
       { new: true }
     ).select('-password');
 
-    res.json({ message: 'Avatar updated successfully', user });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.json({ message: 'Avatar removed successfully', user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
