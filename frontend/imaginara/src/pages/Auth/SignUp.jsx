@@ -7,7 +7,7 @@ const SignUp = ({ onSignUp }) => {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
+  const [avatar, setAvatar] = useState(null);
   // Re-creating the float animation for consistency
   useEffect(() => {
     let styleSheet = document.styleSheets[0];
@@ -33,24 +33,34 @@ const SignUp = ({ onSignUp }) => {
     }
   }, []);
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+ const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+const handleFileChange = (e) => setAvatar(e.target.files[0]);
 
-  const handleSignUp = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+const handleSignUp = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setError("");
 
-    try {
-      const res = await api.post("/api/auth/register", form);
-      localStorage.setItem("token", res.data.token);
-      onSignUp?.();
-      navigate("/home");
-    } catch (err) {
-      setError(err.response?.data?.message || "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    const formData = new FormData();
+    formData.append("name", form.name);
+    formData.append("email", form.email);
+    formData.append("password", form.password);
+    if (avatar) formData.append("avatar", avatar);
+
+    const res = await api.post("/api/auth/register", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    localStorage.setItem("token", res.data.token);
+    onSignUp?.();
+    navigate("/home");
+  } catch (err) {
+    setError(err.response?.data?.message || "Something went wrong");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div style={styles.container}>
@@ -91,6 +101,13 @@ const SignUp = ({ onSignUp }) => {
               required
               style={styles.input}
             />
+            <input
+  type="file"
+  name="avatar"
+  accept="image/*"
+  onChange={handleFileChange}
+  style={styles.input}
+/>
             {error && <p style={styles.error}>{error}</p>}
             <button type="submit" disabled={loading} style={styles.button}>
               {loading ? "Signing Up..." : "Sign Up"}

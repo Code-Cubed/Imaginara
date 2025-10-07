@@ -2,7 +2,7 @@
 const User = require('../models/User');
 const Artwork = require('../models/Artwork');
 const Comment = require('../models/Comment');
-
+const { uploadToCloudinary } = require('../middlewares/upload');
 // Get user's uploaded artworks
 exports.getUserUploads = async (req, res) => {
   try {
@@ -179,5 +179,25 @@ exports.getUserProfile = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+exports.updateAvatar = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'No image provided' });
+
+    // Upload to Cloudinary
+    const uploaded = await uploadToCloudinary(req.file.buffer, 'avatars');
+
+    // Update user avatar
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { avatar: uploaded.secure_url },
+      { new: true }
+    ).select('-password');
+
+    res.json({ message: 'Avatar updated successfully', user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };

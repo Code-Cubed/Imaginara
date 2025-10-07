@@ -76,15 +76,21 @@ const ProfilePage = ({ onLogout }) => {
   }, [userId]);
 
   const fetchProfile = async () => {
-    try {
-      const response = await fetch(`http://localhost:8000/api/users/${userId}/profile`);
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to fetch profile");
-      setProfile(data);
-    } catch (err) {
-      setError(err.message);
+  try {
+    const response = await fetch(`http://localhost:8000/api/users/${userId}/profile`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Failed to fetch profile");
+    setProfile(data);
+
+    // ✅ Save user with avatar in localStorage for TopBar
+    if (data.user) {
+      localStorage.setItem("user", JSON.stringify(data.user));
     }
-  };
+  } catch (err) {
+    setError(err.message);
+  }
+};
+
 
   const fetchUploads = async () => {
     try {

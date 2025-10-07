@@ -6,6 +6,7 @@ const { upload } = require('../middlewares/upload'); // Import the Multer instan
 
 router.post('/register', upload.single('avatar'), authController.register);
 
+
 router.post('/login', authController.login);
 
 module.exports = router;
