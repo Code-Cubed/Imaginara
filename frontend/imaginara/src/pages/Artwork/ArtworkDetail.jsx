@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { Bookmark, BookmarkCheck, Trash2 } from 'lucide-react'; 
+// Imported Trash2 for the delete button, and Edit/X for editing
+import { Bookmark, BookmarkCheck, Trash2, Edit, X } from 'lucide-react'; 
 import LeftBar from '../../components/leftBar/LeftBar';
 import './ArtworkDetail.css';
 import TopBar from '../../components/topBar/topBar';
@@ -13,17 +14,22 @@ const ArtworkDetail = ({ onLogout }) => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [comment, setComment] = useState('');
+  const [comment, setComment] = useState(''); // New comment input
   const [socket, setSocket] = useState(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
+  
+  // NEW: State for comment editing
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editedCommentText, setEditedCommentText] = useState('');
+
 
   // Get current user ID from token
   const getUserIdFromToken = () => {
     const token = localStorage.getItem('token');
     if (!token) return null;
     try {
-      
+      // Decode JWT payload
       const payload = JSON.parse(atob(token.split('.')[1]));
       return payload.id;
     } catch (err) {
@@ -41,6 +47,7 @@ const ArtworkDetail = ({ onLogout }) => {
 
     // Socket listeners
     newSocket.on('new-comment', (newComment) => {
+      // Only update if it's not the current user's comment (to avoid duplicates)
       if (newComment.user._id !== currentUserId) {
         setComments((prev) => [newComment, ...prev]);
         setArtwork((prev) => ({
@@ -49,11 +56,25 @@ const ArtworkDetail = ({ onLogout }) => {
         }));
       }
     });
+    
+    // NEW: Handle real-time comment updates
+    newSocket.on('comment-updated', (updatedComment) => {
+        setComments(prevComments => prevComments.map(c => 
+            c._id === updatedComment._id ? updatedComment : c
+        ));
+    });
+
+    // NEW: Handle real-time comment deletion
+    newSocket.on('comment-deleted', ({ commentId, artworkId }) => {
+        setComments(prevComments => prevComments.filter(c => c._id !== commentId));
+        setArtwork(prev => prev ? { ...prev, commentsCount: prev.commentsCount - 1 } : prev);
+    });
 
     newSocket.on('like-updated', (data) => {
       setArtwork((prev) => ({
         ...prev,
-        likes: { length: data.likes }
+        // Assuming data.likes is the new count or array length
+        likes: { length: data.likes } 
       }));
     });
 
@@ -78,7 +99,6 @@ const ArtworkDetail = ({ onLogout }) => {
         await fetchArtwork();
         await fetchComments();
         
-        
         if (currentUserId && localStorage.getItem('token')) {
              await fetchBookmarkStatus();
         }
@@ -101,7 +121,6 @@ const ArtworkDetail = ({ onLogout }) => {
   }, [id]);
 
   const trackView = async () => {
-    
     try {
       const response = await fetch(`http://localhost:8000/api/artworks/${id}/view`, {
         method: 'POST'
@@ -128,9 +147,7 @@ const ArtworkDetail = ({ onLogout }) => {
 
       setArtwork(data);
       
-      // Check if current user liked this artwork
       if (currentUserId && data.likes) {
-        
         const liked = data.likes.some(like => like.toString() === currentUserId);
         setIsLiked(liked);
       }
@@ -148,14 +165,12 @@ const ArtworkDetail = ({ onLogout }) => {
     if (!token || !currentUserId) return;
 
     try {
-        
         const response = await fetch(`http://localhost:8000/api/users/${currentUserId}/bookmarks`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
         
         if (response.ok && Array.isArray(data)) {
-            // Check if any bookmarked item's _id matches the current artwork id
             const bookmarked = data.some(item => item._id === id);
             setIsBookmarked(bookmarked);
         }
@@ -166,7 +181,6 @@ const ArtworkDetail = ({ onLogout }) => {
 
 
   const fetchComments = async () => {
-    
     try {
       const response = await fetch(`http://localhost:8000/api/comments/${id}`);
       const data = await response.json();
@@ -182,7 +196,7 @@ const ArtworkDetail = ({ onLogout }) => {
   };
 
   const handleLike = async () => {
-    
+    // ... (handleLike implementation)
     if (!currentUserId) {
       alert('Please login to like artworks');
       navigate('/login');
@@ -220,7 +234,7 @@ const ArtworkDetail = ({ onLogout }) => {
   };
 
   const handleBookmark = async () => {
-    
+    // ... (handleBookmark implementation)
     if (!currentUserId) {
       alert('Please login to bookmark artworks');
       navigate('/login');
@@ -257,7 +271,7 @@ const ArtworkDetail = ({ onLogout }) => {
   };
 
   const handleCommentSubmit = async (e) => {
-    
+    // ... (handleCommentSubmit implementation)
     e.preventDefault();
     
     if (!currentUserId) {
@@ -287,11 +301,13 @@ const ArtworkDetail = ({ onLogout }) => {
         throw new Error(data.message || 'Failed to post comment');
       }
 
+      // Socket handles notifying other users, but we update our own state immediately
       if (socket) {
         socket.emit('comment-added', { artworkId: id, comment: data });
       }
 
       setComment('');
+      // Prepend new comment to the list
       setComments([data, ...comments]);
       setArtwork((prev) => ({
         ...prev,
@@ -302,8 +318,8 @@ const ArtworkDetail = ({ onLogout }) => {
     }
   };
 
-  
   const handleDeleteArtwork = async () => {
+    // ... (handleDeleteArtwork implementation)
     if (!window.confirm('Are you absolutely sure you want to delete this artwork? This action is permanent and cannot be undone.')) {
       return;
     }
@@ -319,7 +335,6 @@ const ArtworkDetail = ({ onLogout }) => {
 
       if (!response.ok) {
         const data = await response.json();
-        
         throw new Error(data.message || 'Failed to delete artwork.');
       }
 
@@ -328,6 +343,87 @@ const ArtworkDetail = ({ onLogout }) => {
     } catch (err) {
       alert(`Error: ${err.message}`);
     }
+  };
+  
+  // NEW: Comment Edit/Delete Functions
+  
+  const startEdit = (comment) => {
+      setEditingCommentId(comment._id);
+      setEditedCommentText(comment.text);
+  };
+
+  const cancelEdit = () => {
+      setEditingCommentId(null);
+      setEditedCommentText('');
+  };
+
+  const handleEditComment = async (commentId) => {
+      if (!editedCommentText.trim()) return alert('Comment cannot be empty.');
+
+      try {
+          const token = localStorage.getItem('token');
+          const response = await fetch(`http://localhost:8000/api/comments/${commentId}`, {
+              method: 'PUT',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ text: editedCommentText })
+          });
+
+          const updatedComment = await response.json();
+
+          if (!response.ok) {
+              throw new Error(updatedComment.message || 'Failed to edit comment');
+          }
+
+          // Update local state and reflect in UI
+          setComments(prev => prev.map(c => 
+              c._id === commentId ? updatedComment : c
+          ));
+
+          // Notify others via socket
+          if (socket) {
+              // Assuming the socket setup handles broadcasting to the artwork room
+              socket.emit('comment-updated', updatedComment); 
+          }
+
+          cancelEdit();
+
+      } catch (err) {
+          alert(err.message);
+      }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+      if (!window.confirm('Are you sure you want to delete this comment?')) return;
+
+      try {
+          const token = localStorage.getItem('token');
+          const response = await fetch(`http://localhost:8000/api/comments/${commentId}`, {
+              method: 'DELETE',
+              headers: {
+                  'Authorization': `Bearer ${token}`
+              }
+          });
+
+          if (!response.ok) {
+              const data = await response.json();
+              throw new Error(data.message || 'Failed to delete comment.');
+          }
+
+          // Update local state (remove comment and decrement count)
+          setComments(prev => prev.filter(c => c._id !== commentId));
+          setArtwork(prev => prev ? { ...prev, commentsCount: prev.commentsCount - 1 } : prev);
+
+          // Notify others via socket
+          if (socket) {
+              socket.emit('comment-deleted', { commentId, artworkId: id });
+          }
+
+      } catch (err) {
+          alert(err.message);
+      }
   };
 
 
@@ -379,7 +475,7 @@ const ArtworkDetail = ({ onLogout }) => {
           </button>
 
           <div className="artwork-detail">
-            
+            {/* Media Section */}
             <div className="media-section">
               {artwork.mediaType === 'image' && (
                 <img
@@ -412,7 +508,7 @@ const ArtworkDetail = ({ onLogout }) => {
               )}
             </div>
 
-            
+            {/* Info Section */}
             <div className="info-section">
               <div className="artwork-header">
                 <h1 className="detail-title">{artwork.title}</h1>
@@ -421,7 +517,7 @@ const ArtworkDetail = ({ onLogout }) => {
                 )}
               </div>
 
-              
+              {/* Conditional Delete Button near header */}
               {isCreator && (
                 <button 
                   onClick={handleDeleteArtwork} 
@@ -493,7 +589,7 @@ const ArtworkDetail = ({ onLogout }) => {
                   onClick={handleLike} 
                   className={`btn btn-like ${isLiked ? 'liked' : ''}`}
                 >
-                  {isLiked ? 'Liked' : 'Like'}
+                  {isLiked ? '❤️ Liked' : '🤍 Like'}
                 </button>
                 <button 
                   onClick={handleBookmark} 
@@ -531,28 +627,66 @@ const ArtworkDetail = ({ onLogout }) => {
                 </form>
 
                 <div className="comments-list">
-                  {comments.map((cmt) => (
-                    <div key={cmt._id} className="comment-item">
-                      <div className="comment-avatar">
-                        {cmt.user?.avatar ? (
-                          <img src={cmt.user.avatar} alt={cmt.user.name} />
-                        ) : (
-                          <div className="avatar-placeholder">
-                            {cmt.user?.name?.charAt(0) || 'U'}
-                          </div>
-                        )}
-                      </div>
-                      <div className="comment-content">
-                        <div className="comment-header">
-                          <span className="comment-author">{cmt.user?.name || 'Anonymous'}</span>
-                          <span className="comment-date">
-                            {new Date(cmt.createdAt).toLocaleDateString()}
-                          </span>
+                  {comments.map((cmt) => {
+                    const isCommentCreator = cmt.user?._id === currentUserId;
+                    const isEditing = editingCommentId === cmt._id;
+
+                    return (
+                      <div key={cmt._id} className="comment-item">
+                        <div className="comment-avatar">
+                          {cmt.user?.avatar ? (
+                            <img src={cmt.user.avatar} alt={cmt.user.name} />
+                          ) : (
+                            <div className="avatar-placeholder">
+                              {cmt.user?.name?.charAt(0) || 'U'}
+                            </div>
+                          )}
                         </div>
-                        <p className="comment-text">{cmt.text}</p>
+                        <div className="comment-content">
+                          <div className="comment-header">
+                            <span className="comment-author">{cmt.user?.name || 'Anonymous'}</span>
+                            <span className="comment-date">
+                              {new Date(cmt.createdAt).toLocaleDateString()}
+                            </span>
+
+                            {/* Conditional Edit/Delete Buttons */}
+                            {isCommentCreator && !isEditing && (
+                              <div className="comment-actions">
+                                <button onClick={() => startEdit(cmt)} className="action-btn edit-btn">
+                                  <Edit size={14} />
+                                </button>
+                                <button onClick={() => handleDeleteComment(cmt._id)} className="action-btn delete-btn">
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Conditional Rendering for Edit Form or Comment Text */}
+                          {isEditing ? (
+                            <div className="edit-form">
+                              <textarea
+                                value={editedCommentText}
+                                onChange={(e) => setEditedCommentText(e.target.value)}
+                                className="comment-edit-input"
+                                rows={3}
+                              />
+                              <div className="edit-actions-footer">
+                                <button onClick={() => handleEditComment(cmt._id)} className="btn btn-primary btn-sm">
+                                  Save
+                                </button>
+                                <button onClick={cancelEdit} className="btn btn-secondary btn-sm ml-2">
+                                  <X size={16} /> Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="comment-text">{cmt.text}</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
