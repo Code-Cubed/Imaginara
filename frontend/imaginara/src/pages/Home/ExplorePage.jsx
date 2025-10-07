@@ -117,7 +117,7 @@ const ExplorePage = ({ toggleSave, savedItems, onLogout }) => {
 
   return (
     <div className="flex">
-      <LeftBar onLogout={onLogout} />
+      {/* <LeftBar onLogout={onLogout} /> */}
 
       <main className="flex-1 p-4 sm:p-6 bg-gray-50 min-h-screen">
         <ExploreTopBar onSearch={setSearchQuery} />
