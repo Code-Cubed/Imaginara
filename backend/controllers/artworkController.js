@@ -1,4 +1,3 @@
-// controllers/artworkController.js
 const Artwork = require('../models/Artwork');
 const Comment = require('../models/Comment');
 const User = require('../models/User');
@@ -144,5 +143,26 @@ exports.bookmarkArtwork = async (req, res) => {
     });
   } catch (err) { 
     res.status(500).json({ message: err.message }); 
+  }
+};
+
+
+exports.deleteArtwork = async (req, res) => {
+  try {
+    const artworkId = req.params.id;
+    
+  
+    const art = await Artwork.findById(artworkId);
+    if (!art) return res.status(404).json({ message: 'Artwork not found' });
+
+    if (art.creator.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Forbidden: You do not have permission to delete this artwork.' });
+    }
+    await art.deleteOne(); 
+    await Comment.deleteMany({ artwork: artworkId });
+
+    res.status(200).json({ message: 'Artwork and related comments deleted successfully.' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
