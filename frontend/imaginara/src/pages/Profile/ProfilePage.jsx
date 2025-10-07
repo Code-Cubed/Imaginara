@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Trash2, Heart, MessageCircle, Eye } from "lucide-react";
+import { User, Trash2, Heart, MessageCircle, Eye, Edit, X } from "lucide-react";
 import { io } from "socket.io-client";
 import LeftBar from "../../components/leftBar/LeftBar";
 import "./ProfilePage.css";
@@ -16,6 +16,8 @@ const ProfilePage = ({ onLogout }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [socket, setSocket] = useState(null);
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editedCommentText, setEditedCommentText] = useState('');
 
   // Get userId from token
   const getUserIdFromToken = () => {
@@ -144,6 +146,72 @@ const ProfilePage = ({ onLogout }) => {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const startEdit = (comment) => {
+    setEditingCommentId(comment._id);
+    setEditedCommentText(comment.text);
+  };
+
+  const cancelEdit = () => {
+    setEditingCommentId(null);
+    setEditedCommentText('');
+  };
+
+  const handleEditComment = async (commentId) => {
+    if (!editedCommentText.trim()) return alert('Comment cannot be empty.');
+    const token = localStorage.getItem("token");
+    if (!token) return navigate("/login");
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/comments/${commentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ text: editedCommentText })
+      });
+
+      const updatedComment = await response.json();
+
+      if (!response.ok) {
+        throw new Error(updatedComment.message || 'Failed to edit comment');
+      }
+
+      setComments(prev => prev.map(c =>
+        c._id === commentId ? { ...c, text: updatedComment.text } : c
+      ));
+
+      cancelEdit();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+    const token = localStorage.getItem("token");
+    if (!token) return navigate("/login");
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to delete comment.');
+      }
+
+      setComments(prev => prev.filter(c => c._id !== commentId));
+      alert('Comment deleted successfully.');
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -323,31 +391,83 @@ const ProfilePage = ({ onLogout }) => {
           </div>
         ) : (
           <div className="comments-list">
-            {comments.map((comment) => (
-              <div
-                key={comment._id}
-                className="comment-card"
-                onClick={() => handleArtworkClick(comment.artwork._id)}
-              >
-                <div className="comment-artwork-thumb">
-                  {comment.artwork?.thumbnailUrl && (
-                    <img
-                      src={comment.artwork.thumbnailUrl}
-                      alt={comment.artwork.title}
-                    />
-                  )}
+            {comments.map((comment) => {
+              const isEditing = editingCommentId === comment._id;
+
+              return (
+                <div
+                  key={comment._id}
+                  className="comment-card"
+                  onClick={!isEditing ? () => handleArtworkClick(comment.artwork._id) : undefined}
+                  style={{ cursor: !isEditing ? 'pointer' : 'default' }}
+                >
+                  <div className="comment-artwork-thumb">
+                    {comment.artwork?.thumbnailUrl && (
+                      <img
+                        src={comment.artwork.thumbnailUrl}
+                        alt={comment.artwork.title}
+                      />
+                    )}
+                  </div>
+                  <div className="comment-content">
+                    <div className="comment-header-row">
+                      <p className="comment-meta">
+                        On: <strong>{comment.artwork?.title || "Unknown"}</strong>
+                        <span className="comment-date">
+                          {new Date(comment.createdAt).toLocaleDateString()}
+                        </span>
+                      </p>
+
+                      {!isEditing && (
+                        <div className="comment-actions">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); startEdit(comment); }}
+                            className="action-btn edit-btn"
+                            title="Edit Comment"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteComment(comment._id); }}
+                            className="action-btn delete-btn"
+                            title="Delete Comment"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {isEditing ? (
+                      <div className="edit-form" onClick={(e) => e.stopPropagation()}>
+                        <textarea
+                          value={editedCommentText}
+                          onChange={(e) => setEditedCommentText(e.target.value)}
+                          className="comment-edit-input"
+                          rows={3}
+                        />
+                        <div className="edit-actions-footer">
+                          <button
+                            onClick={() => handleEditComment(comment._id)}
+                            className="btn btn-primary btn-sm"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={cancelEdit}
+                            className="btn btn-secondary btn-sm"
+                          >
+                            <X size={16} style={{ verticalAlign: 'middle', marginRight: '5px' }} /> Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="comment-text">{comment.text}</p>
+                    )}
+                  </div>
                 </div>
-                <div className="comment-content">
-                  <p className="comment-text">{comment.text}</p>
-                  <p className="comment-meta">
-                    On: <strong>{comment.artwork?.title || "Unknown"}</strong>
-                    <span className="comment-date">
-                      {new Date(comment.createdAt).toLocaleDateString()}
-                    </span>
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         );
 
