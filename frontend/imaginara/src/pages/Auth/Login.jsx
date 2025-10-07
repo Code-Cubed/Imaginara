@@ -7,26 +7,23 @@ const Login = ({ onLogin }) => {
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  
+
   // State to track mobile status
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   // Responsive logic and float animation setup
   useEffect(() => {
-    // 1. Handle Responsive Resize
-    const handleResize = () => {
-        setIsMobile(window.innerWidth < 768);
-    };
-    window.addEventListener('resize', handleResize);
+    // Handle Responsive Resize
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
 
-    // 2. Create the "float" animation safely
+    // Float animation
     let styleSheet = document.styleSheets[0];
     if (!styleSheet) {
       const style = document.createElement("style");
       document.head.appendChild(style);
       styleSheet = style.sheet;
     }
-
     const keyframes = `
       @keyframes float {
         0% { transform: translateY(0px); }
@@ -42,12 +39,12 @@ const Login = ({ onLogin }) => {
       console.warn("Animation rule already exists or cannot be inserted:", err);
     }
 
-    return () => window.removeEventListener('resize', handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleLogin = async (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -63,36 +60,12 @@ const Login = ({ onLogin }) => {
     }
   };
 
-  // Helper function to dynamically adjust styles based on screen size
-  const getResponsiveStyle = (desktopStyle, mobileStyle) => {
-    return isMobile ? mobileStyle : desktopStyle;
-  };
-
-  const cardStyle = {
-    ...styles.card,
-    flexDirection: getResponsiveStyle('row', 'column'),
-    width: getResponsiveStyle('950px', '90%'),
-    height: getResponsiveStyle('550px', 'auto'),
-    maxHeight: '90vh', // Ensure it fits within the viewport height
-    overflowY: isMobile ? 'auto' : 'hidden', // Allow scrolling on mobile if content overflows
-  };
-
-  const leftSectionStyle = {
-    ...styles.leftSection,
-    display: getResponsiveStyle('flex', 'none'), // Hide illustration on mobile
-  };
-
-  const rightSectionStyle = {
-    ...styles.rightSection,
-    flex: getResponsiveStyle(1, 'unset'),
-    padding: getResponsiveStyle('40px', '30px 20px'),
-  };
-  
-  const formStyle = {
-    ...styles.form,
-    width: getResponsiveStyle('90%', '100%'), // Use full width on mobile
-  };
-
+  // Responsive styling
+  const getResponsiveStyle = (desktop, mobile) => (isMobile ? mobile : desktop);
+  const cardStyle = { ...styles.card, flexDirection: getResponsiveStyle("row", "column"), width: getResponsiveStyle("950px", "90%"), height: getResponsiveStyle("550px", "auto"), maxHeight: "90vh", overflowY: isMobile ? "auto" : "hidden" };
+  const leftSectionStyle = { ...styles.leftSection, display: getResponsiveStyle("flex", "none") };
+  const rightSectionStyle = { ...styles.rightSection, flex: getResponsiveStyle(1, "unset"), padding: getResponsiveStyle("40px", "30px 20px") };
+  const formStyle = { ...styles.form, width: getResponsiveStyle("90%", "100%") };
 
   return (
     <div style={styles.container}>
@@ -100,11 +73,10 @@ const Login = ({ onLogin }) => {
         <div style={leftSectionStyle}>
           <h1 style={styles.brand}>Welcome Back!</h1>
           <p style={styles.tagline}>Log in and continue your creative journey 🚀</p>
-          
         </div>
 
         <div style={rightSectionStyle}>
-          <form onSubmit={handleLogin} style={formStyle}>
+          <form onSubmit={handleLoginSubmit} style={formStyle}>
             <h2 style={styles.title}>Login</h2>
             <input
               type="email"
@@ -125,9 +97,21 @@ const Login = ({ onLogin }) => {
               style={styles.input}
             />
             {error && <p style={styles.error}>{error}</p>}
+
+            {/* --- Forgot Password Link --- */}
+            <p style={{ ...styles.text, marginTop: "-10px", marginBottom: "10px" }}>
+              <span
+                style={{ color: "#6a82fb", cursor: "pointer", textDecoration: "underline" }}
+                onClick={() => navigate("/forgot-password")}
+              >
+                Forgot Password?
+              </span>
+            </p>
+
             <button type="submit" disabled={loading} style={styles.button}>
               {loading ? "Logging In..." : "Login"}
             </button>
+
             <p style={styles.text}>
               Don’t have an account?{" "}
               <Link to="/signup" style={styles.link}>
@@ -141,7 +125,6 @@ const Login = ({ onLogin }) => {
   );
 };
 
-
 const styles = {
   container: {
     display: "flex",
@@ -151,7 +134,7 @@ const styles = {
     background: "linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%)",
     fontFamily: "'Inter', sans-serif",
     overflow: "hidden",
-    padding: "20px", 
+    padding: "20px",
   },
   card: {
     display: "flex",
@@ -171,86 +154,16 @@ const styles = {
     justifyContent: "center",
     textAlign: "center",
   },
-  brand: {
-    fontSize: "42px",
-    marginBottom: "15px",
-    fontWeight: "700",
-    letterSpacing: "1px",
-    textShadow: "2px 2px 4px rgba(0,0,0,0.1)",
-  },
-  tagline: {
-    fontSize: "18px",
-    opacity: "0.95",
-    marginBottom: "40px",
-    lineHeight: "1.5",
-  },
-  image: {
-    width: "280px",
-    animation: "float 3s ease-in-out infinite",
-    filter: "drop-shadow(5px 5px 10px rgba(0,0,0,0.2))",
-    maxWidth: "100%", // Ensure image scales down
-    height: "auto",
-  },
-  rightSection: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fefefe",
-  },
-  form: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "20px",
-  },
-  title: {
-    textAlign: "center",
-    fontSize: "32px",
-    color: "#333",
-    marginBottom: "20px",
-    fontWeight: "700",
-  },
-  input: {
-    padding: "14px",
-    borderRadius: "10px",
-    border: "1px solid #e0e0e0",
-    outline: "none",
-    fontSize: "16px",
-    transition: "border-color 0.3s ease, box-shadow 0.3s ease",
-  },
-  button: {
-    padding: "15px",
-    borderRadius: "10px",
-    border: "none",
-    background: "linear-gradient(135deg, #6a82fb 0%, #fc5c7d 100%)",
-    color: "#fff",
-    cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "17px",
-    letterSpacing: "0.5px",
-    transition: "all 0.3s ease",
-    boxShadow: "0 8px 20px rgba(106, 130, 251, 0.3)",
-    "&:disabled": {
-      opacity: "0.7",
-      cursor: "not-allowed",
-    },
-  },
-  error: {
-    color: "#e74c3c",
-    textAlign: "center",
-    fontSize: "15px",
-    marginTop: "-10px",
-  },
-  text: {
-    textAlign: "center",
-    fontSize: "15px",
-    color: "#555",
-  },
-  link: {
-    color: "#6a82fb",
-    fontWeight: "600",
-    textDecoration: "none",
-    transition: "color 0.3s ease",
-  },
+  brand: { fontSize: "42px", marginBottom: "15px", fontWeight: "700", letterSpacing: "1px", textShadow: "2px 2px 4px rgba(0,0,0,0.1)" },
+  tagline: { fontSize: "18px", opacity: "0.95", marginBottom: "40px", lineHeight: "1.5" },
+  rightSection: { display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#fefefe" },
+  form: { display: "flex", flexDirection: "column", gap: "20px" },
+  title: { textAlign: "center", fontSize: "32px", color: "#333", marginBottom: "20px", fontWeight: "700" },
+  input: { padding: "14px", borderRadius: "10px", border: "1px solid #e0e0e0", outline: "none", fontSize: "16px", transition: "border-color 0.3s ease, box-shadow 0.3s ease" },
+  button: { padding: "15px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #6a82fb 0%, #fc5c7d 100%)", color: "#fff", cursor: "pointer", fontWeight: "700", fontSize: "17px", letterSpacing: "0.5px", transition: "all 0.3s ease", boxShadow: "0 8px 20px rgba(106, 130, 251, 0.3)" },
+  error: { color: "#e74c3c", textAlign: "center", fontSize: "15px", marginTop: "-10px" },
+  text: { textAlign: "center", fontSize: "15px", color: "#555" },
+  link: { color: "#6a82fb", fontWeight: "600", textDecoration: "none", transition: "color 0.3s ease" },
 };
 
-export default Login;                      
+export default Login;

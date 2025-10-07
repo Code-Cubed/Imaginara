@@ -10,6 +10,7 @@ import ArtworkDetail from './pages/Artwork/ArtworkDetail';
 import AddArtwork from './pages/Artwork/Addartwork';
 import ExplorePage from './pages/Home/ExplorePage'; 
 import ProfilePage from './pages/Profile/ProfilePage';
+import ForgotPassword from './pages/Auth/ForgetPassword';
 import ChatBot from './components/ChatBot/ChatBot'; 
 
 function App() {
@@ -77,6 +78,17 @@ function App() {
               <Navigate to="/home" replace />
             ) : (
               <SignUp onRegister={handleLogin} />
+            )
+          }
+        />
+
+        <Route
+          path="/forgot-password"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/home" replace />
+            ) : (
+              <ForgotPassword />
             )
           }
         />
