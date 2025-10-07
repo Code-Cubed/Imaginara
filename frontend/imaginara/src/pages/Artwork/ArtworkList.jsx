@@ -16,10 +16,14 @@ const ArtworkList = ({ onLogout }) => {
     sort: 'recent',
   });
 
-  const categories = ['All', 'Art', 'Photography', 'Writing', 'Performance', 'Digital Art', 'Sculpture', 'Music', 'Dance', 'Other'];
+  const categories = [
+    'All', 'Art', 'Photography', 'Writing', 'Performance',
+    'Digital Art', 'Sculpture', 'Music', 'Dance', 'Other'
+  ];
 
   useEffect(() => {
     fetchArtworks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   const fetchArtworks = async () => {
@@ -49,23 +53,24 @@ const ArtworkList = ({ onLogout }) => {
   const handleArtworkClick = (artworkId) => navigate(`/artwork/${artworkId}`);
 
   const {theme} = useContext(ThemeContext);
-  const textColor = theme === "dark" ? "#f3f4f6" : "#22223b";
+
+
   return (
-    <div data-theme={theme} className=" flex min-h-screen ">
+    <div data-theme={theme} className="flex min-h-screen ">
+      {/* LeftBar rendered only once */}
       {/* <LeftBar onLogout={onLogout} /> */}
 
       <div className="flex-1 flex flex-col">
-        {/* TopBar is placed here */}
         <TopBar />
 
-        <div className="gallery-container p-4 sm:p-6 flex-1 overflow-auto">
-          
+        <div className="gallery-container flex-1 p-4 sm:p-6 overflow-auto">
+          {/* Header */}
           <div className="gallery-header text-center mb-6 sm:mb-8">
             <h1 className="gallery-title">Gallery of Wonders</h1>
             <p className="gallery-subtitle">Discover amazing creative works</p>
           </div>
 
-          
+          {/* Filters */}
           <div className="filters-section flex flex-wrap gap-4 mb-4">
             <input
               type="text"
@@ -85,23 +90,27 @@ const ArtworkList = ({ onLogout }) => {
             </select>
           </div>
 
-          
+          {/* Categories */}
           <div className="category-tabs mb-6 overflow-x-auto">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => handleCategoryChange(cat === 'All' ? '' : cat)}
-                className={`category-tab ${(cat === 'All' && !filters.category) || filters.category === cat ? 'active' : ''}`}
+                className={`category-tab ${
+                  (cat === 'All' && !filters.category) || filters.category === cat
+                    ? 'active'
+                    : ''
+                }`}
               >
                 {cat}
               </button>
             ))}
           </div>
 
-          
+          {/* Error */}
           {error && <div className="alert alert-error mb-4">{error}</div>}
 
-          
+          {/* Loading / Empty / Artworks */}
           {loading ? (
             <div className="loading-container">
               <div className="loading-spinner"></div>
@@ -112,38 +121,52 @@ const ArtworkList = ({ onLogout }) => {
               <div className="empty-icon">🎨</div>
               <h3>No artworks found</h3>
               <p>Be the first to share your creative work!</p>
-              <button onClick={() => navigate('/addartwork')} className="btn btn-primary">
-                Upload Artwork
+              <button
+                onClick={() => navigate('/addartwork')}
+                className="btn btn-primary"
+              >
+                upload Artworkk
               </button>
             </div>
           ) : (
             <div className="artworks-grid">
               {artworks.map((artwork) => (
-                <div key={artwork._id} className="artwork-card" onClick={() => handleArtworkClick(artwork._id)}>
+                <div
+                  key={artwork._id}
+                  className="artwork-card"
+                  onClick={() => handleArtworkClick(artwork._id)}
+                >
                   <div className="artwork-image-container">
-                const { theme } = useContext(ThemeContext);
-                const textColor = theme === "dark" ? "#f3f4f6" : "#22223b";
                     {artwork.mediaType === 'image' ? (
-                      <div data-theme={theme} className=" flex min-h-screen " style={{ color: textColor }}>
-                        <img src={artwork.thumbnailUrl || artwork.mediaUrl} alt={artwork.title} className="artwork-image" />
-                        <video src={artwork.mediaUrl} className="artwork-image" muted />
-                      </div>
+                      <img
+                        src={artwork.thumbnailUrl || artwork.mediaUrl}
+                        alt={artwork.title}
+                        className="artwork-image"
+                      />
+                    ) : artwork.mediaType === 'video' ? (
+                      <video src={artwork.mediaUrl} className="artwork-image" muted />
                     ) : (
                       <div className="artwork-placeholder">
-                        <span className="media-icon">{artwork.mediaType === 'audio' ? '🎵' : '📄'}</span>
+                        <span className="media-icon">
+                          {artwork.mediaType === 'audio' ? '🎵' : '📄'}
+                        </span>
                       </div>
                     )}
                     <div className="artwork-overlay">
                       <div className="artwork-stats">
-                        <span> {artwork.likes.length}</span>
-                        <span>  {artwork.views}</span>
+                        <span>{artwork.likes.length}</span>
+                        <span>{artwork.views}</span>
                       </div>
                     </div>
                   </div>
                   <div className="artwork-info">
                     <h3 className="artwork-title">{artwork.title}</h3>
-                    <p className="artwork-creator">By {artwork.creator?.name || 'Unknown'}</p>
-                    {artwork.category && <span className="artwork-category">{artwork.category}</span>}
+                    <p className="artwork-creator">
+                      By {artwork.creator?.name || 'Unknown'}
+                    </p>
+                    {artwork.category && (
+                      <span className="artwork-category">{artwork.category}</span>
+                    )}
                   </div>
                 </div>
               ))}

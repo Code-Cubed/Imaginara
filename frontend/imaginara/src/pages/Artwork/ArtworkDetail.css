@@ -1,8 +1,7 @@
-ArtworkDetail.css
-
 .detail-container {
   max-width: 1200px;
   margin: 0 auto;
+  padding: 0 16px;
 }
 
 .back-button {
@@ -111,6 +110,7 @@ ArtworkDetail.css
   height: 48px;
   border-radius: 50%;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .creator-avatar img {
@@ -212,6 +212,7 @@ ArtworkDetail.css
 .action-buttons {
   display: flex;
   gap: 12px;
+  margin-top: 16px;
 }
 
 .btn-like,
@@ -283,9 +284,11 @@ ArtworkDetail.css
   margin-bottom: 24px;
 }
 
+/* Responsive Adjustments */
 @media (max-width: 968px) {
   .artwork-detail {
     grid-template-columns: 1fr;
+    gap: 24px;
   }
 
   .detail-title {
@@ -303,7 +306,7 @@ ArtworkDetail.css
 
 @media (max-width: 768px) {
   .detail-container {
-    padding: 0 16px;
+    padding: 0 12px;
   }
 
   .artwork-detail {

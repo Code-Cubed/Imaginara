@@ -1,11 +1,8 @@
-
-import React, { useState, useContext } from "react";
-import { ThemeContext } from "../../Context/ThemeContext";
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ThemeContext } from '../../Context/ThemeContext';
+
 const AddArtwork = ({ onLogout }) => {
-  const { theme } = useContext(ThemeContext);
-  const textColor = theme === "dark" ? "#f3f4f6" : "#22223b";
-  
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: '',
@@ -13,7 +10,7 @@ const AddArtwork = ({ onLogout }) => {
     category: '',
     tags: '',
     mediaType: 'image',
-    file: null
+    file: null,
   });
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -21,67 +18,52 @@ const AddArtwork = ({ onLogout }) => {
   const [success, setSuccess] = useState('');
 
   const categories = [
-    'Art',
-    'Photography',
-    'Writing',
-    'Performance',
-    'Digital Art',
-    'Sculpture',
-    'Music',
-    'Dance',
-    'Other'
+    'Art', 'Photography', 'Writing', 'Performance', 
+    'Digital Art', 'Sculpture', 'Music', 'Dance', 'Other'
   ];
 
   const mediaTypes = [
     { value: 'image', label: 'Image', accept: 'image/*' },
     { value: 'video', label: 'Video', accept: 'video/*' },
     { value: 'audio', label: 'Audio', accept: 'audio/*' },
-    { value: 'document', label: 'Document', accept: '.pdf,.doc,.docx' }
+    { value: 'document', label: 'Document', accept: '.pdf,.doc,.docx' },
   ];
+
+  const handleInputChange = (e) => {
+    const { name, value, type } = e.target;
+    if (type === 'radio') {
+      setFormData({ ...formData, mediaType: value, file: null });
+      setPreview(null);
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      // Validate file size (max 50MB)
-      if (file.size > 50 * 1024 * 1024) {
-        setError('File size must be less than 50MB');
-        return;
-      }
+    if (!file) return;
 
-      setFormData({ ...formData, file });
-      setError('');
+    if (file.size > 50 * 1024 * 1024) {
+      setError('File size must be less than 50MB');
+      return;
+    }
 
-      // Create preview for images
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setPreview(reader.result);
-        };
-        reader.readAsDataURL(file);
-      } else if (file.type.startsWith('video/')) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setPreview(reader.result);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        setPreview(null);
-      }
+    setFormData({ ...formData, file });
+    setError('');
+
+    if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => setPreview(reader.result);
+      reader.readAsDataURL(file);
+    } else {
+      setPreview(null);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!formData.file) {
-      setError('Please select a file to upload');
-      return;
-    }
-
-    if (!formData.title || !formData.category) {
-      setError('Please fill in all required fields');
-      return;
-    }
+    if (!formData.file) return setError('Please select a file to upload');
+    if (!formData.title || !formData.category) return setError('Please fill in all required fields');
 
     setLoading(true);
     setError('');
@@ -97,222 +79,194 @@ const AddArtwork = ({ onLogout }) => {
 
     try {
       const token = localStorage.getItem('token');
-      
       const response = await fetch('http://localhost:8000/api/artworks', {
         method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
         body: submitData,
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
       });
 
       const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Upload failed');
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Upload failed');
-      }
-
-      // Reset form
       setFormData({
         title: '',
         description: '',
         category: '',
         tags: '',
         mediaType: 'image',
-        file: null
+        file: null,
       });
       setPreview(null);
       setSuccess('Artwork uploaded successfully!');
-      
-      // Redirect to home after 2 seconds
-      setTimeout(() => {
-        navigate('/home');
-      }, 2000);
+
+      setTimeout(() => navigate('/home'), 2000);
     } catch (err) {
       setError(err.message || 'Failed to upload artwork');
     } finally {
       setLoading(false);
     }
   };
-
-  const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
+  const { theme } = React.useContext(ThemeContext);
   return (
-    <div className="page-container">
-      <LeftBar onLogout={onLogout} />
-      
-      <div className="main-content">
-        <TopBar />
-        <div className="upload-container">
-          <div className="upload-header">
-            <h1 className="upload-title">Upload Artwork</h1>
-            <p className="upload-subtitle">Share your creative work with the community</p>
+    <div data-theme={theme} className="min-h-screen flex flex-col items-center py-8">
+      <div className="w-full max-w-2xl mx-auto px-4">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold mb-2">Upload Artwork</h1>
+          <p className="text-base text-gray-500">Share your creative work with the community</p>
+        </div>
+
+        {error && (
+          <div className="mb-4 text-red-700 border border-red-300 rounded px-4 py-2 text-sm">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="mb-4 text-green-700 border border-green-300 rounded px-4 py-2 text-sm">
+            {success}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Media Type */}
+          <div>
+            <label className="block font-medium mb-2">
+              Media Type <span className="text-red-500">*</span>
+            </label>
+            <div className="flex flex-wrap gap-4">
+              {mediaTypes.map((type) => (
+                <label
+                  key={type.value}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    name="mediaType"
+                    value={type.value}
+                    checked={formData.mediaType === type.value}
+                    onChange={handleInputChange}
+                    className="form-radio accent-indigo-500"
+                  />
+                  <span className="text-sm">{type.label}</span>
+                </label>
+              ))}
+            </div>
           </div>
 
-          {error && (
-            <div className="alert alert-error">
-              {error}
+          {/* File Upload */}
+          <div>
+            <label className="block font-medium mb-2">
+              Upload File <span className="text-red-500">*</span>
+            </label>
+            <div className="flex flex-col items-center">
+              {preview ? (
+                <div className="flex flex-col items-center gap-2">
+                  {formData.mediaType === 'image' && (
+                    <img src={preview} alt="Preview" className="w-48 h-48 object-contain rounded shadow" />
+                  )}
+                  {formData.mediaType === 'video' && (
+                    <video src={preview} controls className="w-48 h-48 rounded shadow" />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => { setFormData({ ...formData, file: null }); setPreview(null); }}
+                    className="text-xs text-red-500 hover:underline mt-1"
+                  >
+                    ✕ Remove
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer w-full">
+                  <div className="text-3xl mb-2">📤</div>
+                  <p className="text-sm font-medium">Click to upload or drag and drop</p>
+                  <p className="text-xs text-gray-400 mb-2">Maximum file size: 50MB</p>
+                  <input
+                    type="file"
+                    onChange={handleFileChange}
+                    accept={mediaTypes.find(t => t.value === formData.mediaType)?.accept}
+                    className="hidden"
+                  />
+                </label>
+              )}
             </div>
-          )}
+          </div>
 
-          {success && (
-            <div className="alert alert-success">
-              {success}
-            </div>
-          )}
+          {/* Title */}
+          <div>
+            <label className="block font-medium mb-2">
+              Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleInputChange}
+              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              placeholder="Enter artwork title"
+              required
+            />
+          </div>
 
-          <form onSubmit={handleSubmit} className="upload-form">
-            {/* Media Type Selection */}
-            <div className="form-group">
-              <label className="form-label">
-                Media Type <span className="required">*</span>
-              </label>
-              <div className="media-type-grid">
-                {mediaTypes.map((type) => (
-                  <label key={type.value} className="media-type-option">
-                    <input
-                      type="radio"
-                      name="mediaType"
-                      value={type.value}
-                      checked={formData.mediaType === type.value}
-                      onChange={handleInputChange}
-                    />
-                    <span>{type.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+          {/* Category */}
+          <div>
+            <label className="block font-medium mb-2">
+              Category <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleInputChange}
+              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              required
+            >
+              <option value="">Select a category</option>
+              {categories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+            </select>
+          </div>
 
-            {/* File Upload */}
-            <div className="form-group">
-              <label className="form-label">
-                Upload File <span className="required">*</span>
-              </label>
-              <div className="file-upload-area">
-                {preview ? (
-                  <div className="preview-container">
-                    {formData.mediaType === 'image' && (
-                      <img src={preview} alt="Preview" className="preview-image" />
-                    )}
-                    {formData.mediaType === 'video' && (
-                      <video src={preview} controls className="preview-video" />
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFormData({ ...formData, file: null });
-                        setPreview(null);
-                      }}
-                      className="remove-file-btn"
-                    >
-                      ✕ Remove
-                    </button>
-                  </div>
-                ) : (
-                  <label className="file-upload-label">
-                    <div className="upload-icon">📤</div>
-                    <p className="upload-text">Click to upload or drag and drop</p>
-                    <p className="upload-subtext">Maximum file size: 50MB</p>
-                    <input
-                      type="file"
-                      onChange={handleFileChange}
-                      accept={mediaTypes.find(t => t.value === formData.mediaType)?.accept}
-                      className="file-input"
-                    />
-                  </label>
-                )}
-              </div>
-            </div>
+          {/* Description */}
+          <div>
+            <label className="block font-medium mb-2">Description</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              placeholder="Describe your artwork..."
+              rows={4}
+            />
+          </div>
 
-            {/* Title */}
-            <div className="form-group">
-              <label className="form-label">
-                Title <span className="required">*</span>
-              </label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                className="form-input"
-                placeholder="Enter artwork title"
-                required
-              />
-            </div>
+          {/* Tags */}
+          <div>
+            <label className="block font-medium mb-2">Tags (comma-separated)</label>
+            <input
+              type="text"
+              name="tags"
+              value={formData.tags}
+              onChange={handleInputChange}
+              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              placeholder="e.g., abstract, colorful, nature"
+            />
+          </div>
 
-            {/* Category */}
-            <div className="form-group">
-              <label className="form-label">
-                Category <span className="required">*</span>
-              </label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                className="form-select"
-                required
-              >
-                <option value="">Select a category</option>
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Description */}
-            <div className="form-group">
-              <label className="form-label">Description</label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                className="form-textarea"
-                placeholder="Describe your artwork..."
-                rows={4}
-              />
-            </div>
-
-            {/* Tags */}
-            <div className="form-group">
-              <label className="form-label">
-                Tags (comma-separated)
-              </label>
-              <input
-                type="text"
-                name="tags"
-                value={formData.tags}
-                onChange={handleInputChange}
-                className="form-input"
-                placeholder="e.g., abstract, colorful, nature"
-              />
-            </div>
-
-            {/* Submit Buttons */}
-            <div className="form-actions">
-              <button
-                type="button"
-                onClick={() => navigate('/home')}
-                className="btn btn-secondary"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn btn-primary"
-              >
-                {loading ? 'Uploading...' : 'Upload Artwork'}
-              </button>
-            </div>
-          </form>
-        </div>
+          {/* Buttons */}
+          <div className="flex justify-end gap-4 pt-2">
+            <button
+              type="button"
+              onClick={() => navigate('/home')}
+              className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 rounded text-white font-semibold bg-indigo-500 hover:bg-indigo-600 transition disabled:opacity-60"
+            >
+              {loading ? 'Uploading...' : 'Upload Artwork'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

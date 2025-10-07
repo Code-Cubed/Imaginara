@@ -1,3 +1,4 @@
+// src/Context/ThemeContext.jsx
 import React, { createContext, useState, useEffect } from "react";
 
 export const ThemeContext = createContext();
@@ -11,8 +12,9 @@ export const ThemeProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("theme", theme);
+    // Apply theme to <html> or <body> if you want global CSS
+    document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
   return (

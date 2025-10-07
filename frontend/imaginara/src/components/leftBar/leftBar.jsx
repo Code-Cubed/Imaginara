@@ -75,8 +75,9 @@ const LeftBar = ({ onLogout }) => {
     if (onLogout) onLogout();         // update App state
   };
 
+
   return (
-    <div style={{ ...styles.leftBar }}>
+    <div data-theme={theme} style={{ ...styles.leftBar }}>
       <div style={styles.menuIcons}>
         {/* Logo */}
         <Link
