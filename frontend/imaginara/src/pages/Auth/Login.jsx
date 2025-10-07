@@ -141,8 +141,7 @@ const Login = ({ onLogin }) => {
   );
 };
 
-// -------------------- BASE STYLES --------------------
-// These styles are used as base properties and merged with responsive overrides.
+
 const styles = {
   container: {
     display: "flex",
@@ -152,7 +151,7 @@ const styles = {
     background: "linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%)",
     fontFamily: "'Inter', sans-serif",
     overflow: "hidden",
-    padding: "20px", // Added padding for mobile safety
+    padding: "20px", 
   },
   card: {
     display: "flex",

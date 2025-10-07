@@ -1,4 +1,4 @@
-// App.jsx
+
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
@@ -9,7 +9,8 @@ import HomePage from './pages/Artwork/ArtworkList';
 import ArtworkDetail from './pages/Artwork/ArtworkDetail';
 import AddArtwork from './pages/Artwork/Addartwork';
 import ExplorePage from './pages/Home/ExplorePage'; 
-import ProfilePage from './pages/Profile/ProfilePage'; 
+import ProfilePage from './pages/Profile/ProfilePage';
+import ChatBot from './components/ChatBot/ChatBot'; 
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -111,6 +112,19 @@ function App() {
             )
           }
         />
+
+        <Route
+          path="/chatbot"
+          element={
+            isAuthenticated ? (
+              <ChatBot onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+
         <Route
           path="/addartwork"
           element={

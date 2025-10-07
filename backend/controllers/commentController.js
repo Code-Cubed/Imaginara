@@ -1,4 +1,4 @@
-// controllers/commentController.js
+
 const Comment = require('../models/Comment');
 const Artwork = require('../models/Artwork');
 

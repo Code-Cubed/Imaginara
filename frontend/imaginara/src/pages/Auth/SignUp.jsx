@@ -108,15 +108,14 @@ const SignUp = ({ onSignUp }) => {
   );
 };
 
-// -------------------- STYLES --------------------
-// The styles are mirrored from the enhanced Login component for a cohesive look.
+
 const styles = {
   container: {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
     minHeight: "100vh",
-    background: "linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%)", // Softer, modern background
+    background: "linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%)", 
     fontFamily: "'Inter', sans-serif",
     overflow: "hidden",
   },
@@ -133,7 +132,7 @@ const styles = {
   },
   leftSection: {
     flex: 1.2,
-    background: "linear-gradient(135deg, #6a82fb 0%, #fc5c7d 100%)", // Vibrant, inviting gradient
+    background: "linear-gradient(135deg, #6a82fb 0%, #fc5c7d 100%)", 
     color: "white",
     padding: "60px 40px",
     display: "flex",

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
-// Imported Trash2 for the delete button, and Edit/X for editing
 import { Bookmark, BookmarkCheck, Trash2, Edit, X } from 'lucide-react'; 
 import LeftBar from '../../components/leftBar/LeftBar';
 import './ArtworkDetail.css';
@@ -14,7 +13,7 @@ const ArtworkDetail = ({ onLogout }) => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [comment, setComment] = useState(''); // New comment input
+  const [comment, setComment] = useState(''); 
   const [socket, setSocket] = useState(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isLiked, setIsLiked] = useState(false);

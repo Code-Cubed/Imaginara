@@ -64,7 +64,7 @@ const LeftBar = ({ onLogout }) => {
     { path: "/home", icon: "https://cdn-icons-png.flaticon.com/512/1946/1946436.png", alt: "Home" },
     { path: "/addartwork", icon: "https://cdn-icons-png.flaticon.com/512/1828/1828817.png", alt: "Add Artwork" },
     { path: "/updates", icon: "https://cdn-icons-png.flaticon.com/512/1828/1828899.png", alt: "Updates" },
-    { path: "/messages", icon: "https://cdn-icons-png.flaticon.com/512/2462/2462719.png", alt: "Messages" },
+    { path: "/chatbot", icon: "https://cdn-icons-png.flaticon.com/512/2462/2462719.png", alt: "AI ChatBot" }, 
     { path: "/settings", icon: "https://cdn-icons-png.flaticon.com/512/3524/3524659.png", alt: "Settings" },
   ];
 

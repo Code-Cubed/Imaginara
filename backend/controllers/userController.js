@@ -1,4 +1,4 @@
-// controllers/userController.js
+
 const User = require('../models/User');
 const Artwork = require('../models/Artwork');
 const Comment = require('../models/Comment');
@@ -114,21 +114,18 @@ exports.getUserComments = async (req, res) => {
 exports.deleteAccount = async (req, res) => {
   try {
     const userId = req.user._id;
-
-    // Delete all user's artworks
     const userArtworks = await Artwork.find({ creator: userId });
     const artworkIds = userArtworks.map(art => art._id);
     
-    // Delete all comments on user's artworks
+   
     await Comment.deleteMany({ artwork: { $in: artworkIds } });
     
-    // Delete all user's comments
+  
     await Comment.deleteMany({ user: userId });
     
-    // Delete all user's artworks
     await Artwork.deleteMany({ creator: userId });
     
-    // Remove user from other users' followers/following lists
+   
     await User.updateMany(
       { followers: userId },
       { $pull: { followers: userId } }
@@ -138,7 +135,7 @@ exports.deleteAccount = async (req, res) => {
       { $pull: { following: userId } }
     );
     
-    // Remove user's likes from all artworks
+   
     await Artwork.updateMany(
       { likes: userId },
       { $pull: { likes: userId } }
