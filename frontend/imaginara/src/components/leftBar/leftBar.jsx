@@ -16,7 +16,6 @@ const LeftBar = ({ onLogout }) => {
       top: 0,
       padding: "16px 0px",
       borderRight: "1px solid #e9e9e9",
-      backgroundColor: "#fff",
     },
     menuIcons: {
       display: "flex",

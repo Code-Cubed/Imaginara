@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 import Landing from "./pages/Landing/Landing";
@@ -12,7 +12,7 @@ import ProfilePage from "./pages/Profile/ProfilePage";
 import Settings from "./pages/Settings/Settings";
 
 import ProtectedLayout from "./components/ProtectedLayout";
-import { ThemeProvider } from "./Context/ThemeContext";
+import { ThemeContext, ThemeProvider } from "./Context/ThemeContext";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -38,8 +38,10 @@ function App() {
     );
   }
 
+  const {theme} = useContext(ThemeContext);
+
   return (
-    <ThemeProvider>
+    <div data-theme={theme}>
       <Router>
         <Routes>
           {/* Public Routes */}
@@ -138,7 +140,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
-    </ThemeProvider>
+    </div>
   );
 }
 

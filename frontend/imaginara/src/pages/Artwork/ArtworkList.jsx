@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LeftBar from '../../components/leftBar/LeftBar';
 import TopBar from '../../components/topBar/topBar';
 import './ArtworkList.css';
+import { ThemeContext } from '../../Context/ThemeContext';
 
 const ArtworkList = ({ onLogout }) => {
   const navigate = useNavigate();
@@ -47,8 +48,10 @@ const ArtworkList = ({ onLogout }) => {
   const handleSortChange = (sort) => setFilters({ ...filters, sort });
   const handleArtworkClick = (artworkId) => navigate(`/artwork/${artworkId}`);
 
+  const {theme} = useContext(ThemeContext);
+
   return (
-    <div className="page-container flex min-h-screen bg-gray-100">
+    <div data-theme={theme} className=" flex min-h-screen ">
       {/* <LeftBar onLogout={onLogout} /> */}
 
       <div className="flex-1 flex flex-col">
