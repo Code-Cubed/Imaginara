@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useContext } from "react";
+import { ThemeContext } from "../../Context/ThemeContext";
 import { useNavigate } from 'react-router-dom';
-import LeftBar from '../../components/leftBar/LeftBar';
-import './AddArtwork.css';
-import TopBar from '../../components/topBar/topBar';
 const AddArtwork = ({ onLogout }) => {
+  const { theme } = useContext(ThemeContext);
+  const textColor = theme === "dark" ? "#f3f4f6" : "#22223b";
+  
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: '',

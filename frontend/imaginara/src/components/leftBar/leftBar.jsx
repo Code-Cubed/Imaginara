@@ -1,8 +1,11 @@
-import React from "react";
+import React, { useContext } from "react";
+import { ThemeContext } from "../../Context/ThemeContext";
 import { Link, useLocation } from "react-router-dom";
 
 const LeftBar = ({ onLogout }) => {
   const location = useLocation(); 
+  const { theme } = useContext(ThemeContext);
+  const bgColor = theme === "dark" ? "#23272f" : "#fff";
 
   const styles = {
     leftBar: {
@@ -16,7 +19,6 @@ const LeftBar = ({ onLogout }) => {
       top: 0,
       padding: "16px 0px",
       borderRight: "1px solid #e9e9e9",
-      backgroundColor: "#fff",
     },
     menuIcons: {
       display: "flex",
@@ -74,7 +76,7 @@ const LeftBar = ({ onLogout }) => {
   };
 
   return (
-    <div style={styles.leftBar}>
+    <div style={{ ...styles.leftBar }}>
       <div style={styles.menuIcons}>
         {/* Logo */}
         <Link

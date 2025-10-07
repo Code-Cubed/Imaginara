@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LeftBar from '../../components/leftBar/LeftBar';
 import TopBar from '../../components/topBar/topBar';
 import './ArtworkList.css';
+import { ThemeContext } from '../../Context/ThemeContext';
 
 const ArtworkList = ({ onLogout }) => {
   const navigate = useNavigate();
@@ -47,9 +48,11 @@ const ArtworkList = ({ onLogout }) => {
   const handleSortChange = (sort) => setFilters({ ...filters, sort });
   const handleArtworkClick = (artworkId) => navigate(`/artwork/${artworkId}`);
 
+  const {theme} = useContext(ThemeContext);
+  const textColor = theme === "dark" ? "#f3f4f6" : "#22223b";
   return (
-    <div className="page-container flex min-h-screen bg-gray-100">
-      <LeftBar onLogout={onLogout} />
+    <div data-theme={theme} className=" flex min-h-screen ">
+      {/* <LeftBar onLogout={onLogout} /> */}
 
       <div className="flex-1 flex flex-col">
         {/* TopBar is placed here */}
@@ -118,10 +121,13 @@ const ArtworkList = ({ onLogout }) => {
               {artworks.map((artwork) => (
                 <div key={artwork._id} className="artwork-card" onClick={() => handleArtworkClick(artwork._id)}>
                   <div className="artwork-image-container">
+                const { theme } = useContext(ThemeContext);
+                const textColor = theme === "dark" ? "#f3f4f6" : "#22223b";
                     {artwork.mediaType === 'image' ? (
-                      <img src={artwork.thumbnailUrl || artwork.mediaUrl} alt={artwork.title} className="artwork-image" />
-                    ) : artwork.mediaType === 'video' ? (
-                      <video src={artwork.mediaUrl} className="artwork-image" muted />
+                      <div data-theme={theme} className=" flex min-h-screen " style={{ color: textColor }}>
+                        <img src={artwork.thumbnailUrl || artwork.mediaUrl} alt={artwork.title} className="artwork-image" />
+                        <video src={artwork.mediaUrl} className="artwork-image" muted />
+                      </div>
                     ) : (
                       <div className="artwork-placeholder">
                         <span className="media-icon">{artwork.mediaType === 'audio' ? '🎵' : '📄'}</span>

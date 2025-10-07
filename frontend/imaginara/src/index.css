@@ -1,1 +1,187 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
 @import "tailwindcss";
+
+@theme {
+  --font-display: "Poppins","sans-serif";
+  --breakpoint-3xl: 1920px;
+  --color-primary: #875cf5;
+}
+
+@layer base{
+  html{
+    font-family:var(--font-display);
+  }
+
+  body{
+    background-color: #fcfbfc;
+    overflow-x:hidden;
+  }
+}
+
+.input-box {
+  @apply w-full px-4 py-2 text-sm text-black bg-slate-100 
+         rounded-lg border border-slate-200 focus:outline-none;
+}
+
+.btn-primary{
+  @apply w-full text-sm font-medium bg-violet-500 shadow-lg shadow-purple-600/5 p-[10px] rounded-md my-1 hover:bg-purple-600/15 hover:text-purple-600;
+}
+
+  .card {
+    @apply bg-white p-6 rounded-2xl shadow border border-gray-200;
+  }
+
+  .card-btn {
+    @apply flex items-center gap-2 text-sm font-medium text-gray-700 
+           hover:text-purple-500 bg-gray-50 hover:bg-purple-50 
+           px-4 py-1.5 rounded-lg border border-gray-200 cursor-pointer;
+  }
+
+  .add-btn{
+    @apply flex items-center gap-1.5 text-xs md:text-sm font-medium text-purple-600 whitespace-nowrap bg-purple-50 border-purple-100 rounded-lg px-4 py-2 cursor-pointer;
+
+  }
+
+  .add-btn-fill{
+    @apply text-white bg-primary
+  }
+@plugin "daisyui";
+
+
+
+@plugin "daisyui/theme" {
+  name: "cupcake";
+  
+}
+@plugin "daisyui/theme" {
+  name: "dark";
+  
+}
+@plugin "daisyui/theme" {
+  name: "bumblebee";
+  
+}
+@plugin "daisyui/theme" {
+  name: "emerald";
+  
+}
+@plugin "daisyui/theme" {
+  name: "corporate";
+  
+}
+@plugin "daisyui/theme" {
+  name: "synthwave";
+  
+}
+@plugin "daisyui/theme" {
+  name: "retro";
+  
+}
+@plugin "daisyui/theme" {
+  name: "corporate";
+  
+}
+@plugin "daisyui/theme" {
+  name: "synthwave";
+  
+}
+@plugin "daisyui/theme" {
+  name: "retro";
+  
+}
+@plugin "daisyui/theme" {
+  name: "cyberpunk";
+  
+}
+@plugin "daisyui/theme" {
+  name: "valentine";
+  
+}
+@plugin "daisyui/theme" {
+  name: "halloween";
+  
+}
+@plugin "daisyui/theme" {
+  name: "garden";
+  
+}
+@plugin "daisyui/theme" {
+  name: "forest";
+  
+}
+@plugin "daisyui/theme" {
+  name: "aqua";
+  
+}
+@plugin "daisyui/theme" {
+  name: "lofi";
+  
+}
+@plugin "daisyui/theme" {
+  name: "pastel";
+  
+}
+@plugin "daisyui/theme" {
+  name: "fantasy";
+  
+}
+@plugin "daisyui/theme" {
+  name: "wireframe";
+  
+}
+@plugin "daisyui/theme" {
+  name: "black";
+  
+}
+@plugin "daisyui/theme" {
+  name: "luxury";
+  
+}
+@plugin "daisyui/theme" {
+  name: "dracula";
+  
+}
+@plugin "daisyui/theme" {
+  name: "cmyk";
+  
+}
+@plugin "daisyui/theme" {
+  name: "autumn";
+  
+}
+@plugin "daisyui/theme" {
+  name: "business";
+  
+}
+@plugin "daisyui/theme" {
+  name: "acid";
+  
+}
+@plugin "daisyui/theme" {
+  name: "lemonade";
+  
+}
+@plugin "daisyui/theme" {
+  name: "night";
+  
+}
+@plugin "daisyui/theme" {
+  name: "coffee";
+  
+}
+@plugin "daisyui/theme" {
+  name: "winter";
+  
+}
+@plugin "daisyui/theme" {
+  name: "dim";
+  
+}
+@plugin "daisyui/theme" {
+  name: "nord";
+  
+}
+@plugin "daisyui/theme" {
+  name: "sunset";
+  
+}
