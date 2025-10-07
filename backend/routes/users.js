@@ -7,6 +7,7 @@ const userController = require('../controllers/userController');
 // Public routes
 router.get('/:userId/profile', userController.getUserProfile);
 router.get('/:userId/uploads', userController.getUserUploads);
+router.get('/:userId/likes', userController.getUserLikes);
 router.get('/:userId/comments', userController.getUserComments);
 
 // Protected routes

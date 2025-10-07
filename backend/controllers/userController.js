@@ -56,6 +56,34 @@ exports.getUserBookmarks = async (req, res) => {
   }
 };
 
+// Get user's liked artworks
+exports.getUserLikes = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { page = 1, limit = 20 } = req.query;
+
+    const artworks = await Artwork.find({ 
+      likes: userId,
+      flagged: false 
+    })
+      .populate('creator', 'name avatar')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    const total = await Artwork.countDocuments({ likes: userId, flagged: false });
+
+    res.json({
+      artworks,
+      total,
+      page: parseInt(page),
+      pages: Math.ceil(total / limit)
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // Get user's comments
 exports.getUserComments = async (req, res) => {
   try {
@@ -139,6 +167,7 @@ exports.getUserProfile = async (req, res) => {
 
     // Get counts
     const uploadsCount = await Artwork.countDocuments({ creator: userId, flagged: false });
+    const likesCount = await Artwork.countDocuments({ likes: userId, flagged: false });
     const followersCount = user.followers.length;
     const followingCount = user.following.length;
 
@@ -146,6 +175,7 @@ exports.getUserProfile = async (req, res) => {
       user,
       stats: {
         uploads: uploadsCount,
+        likes: likesCount,
         followers: followersCount,
         following: followingCount
       }
