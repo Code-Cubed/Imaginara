@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { Bookmark, BookmarkCheck } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Trash2 } from 'lucide-react'; 
 import LeftBar from '../../components/leftBar/LeftBar';
 import './ArtworkDetail.css';
 import TopBar from '../../components/topBar/topBar';
@@ -18,11 +18,12 @@ const ArtworkDetail = ({ onLogout }) => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
 
-  // Get current user ID
+  // Get current user ID from token
   const getUserIdFromToken = () => {
     const token = localStorage.getItem('token');
     if (!token) return null;
     try {
+      
       const payload = JSON.parse(atob(token.split('.')[1]));
       return payload.id;
     } catch (err) {
@@ -38,9 +39,8 @@ const ArtworkDetail = ({ onLogout }) => {
 
     newSocket.emit('join-artwork', id);
 
-    // Only update comments from other users
+    // Socket listeners
     newSocket.on('new-comment', (newComment) => {
-      // Check if this comment was posted by current user to avoid duplicates
       if (newComment.user._id !== currentUserId) {
         setComments((prev) => [newComment, ...prev]);
         setArtwork((prev) => ({
@@ -78,6 +78,11 @@ const ArtworkDetail = ({ onLogout }) => {
         await fetchArtwork();
         await fetchComments();
         
+        
+        if (currentUserId && localStorage.getItem('token')) {
+             await fetchBookmarkStatus();
+        }
+
         const viewedArtworks = JSON.parse(sessionStorage.getItem('viewedArtworks') || '[]');
         
         if (!viewedArtworks.includes(id)) {
@@ -96,6 +101,7 @@ const ArtworkDetail = ({ onLogout }) => {
   }, [id]);
 
   const trackView = async () => {
+    
     try {
       const response = await fetch(`http://localhost:8000/api/artworks/${id}/view`, {
         method: 'POST'
@@ -124,6 +130,7 @@ const ArtworkDetail = ({ onLogout }) => {
       
       // Check if current user liked this artwork
       if (currentUserId && data.likes) {
+        
         const liked = data.likes.some(like => like.toString() === currentUserId);
         setIsLiked(liked);
       }
@@ -136,7 +143,30 @@ const ArtworkDetail = ({ onLogout }) => {
     }
   };
 
+  const fetchBookmarkStatus = async () => {
+    const token = localStorage.getItem('token');
+    if (!token || !currentUserId) return;
+
+    try {
+        
+        const response = await fetch(`http://localhost:8000/api/users/${currentUserId}/bookmarks`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        
+        if (response.ok && Array.isArray(data)) {
+            // Check if any bookmarked item's _id matches the current artwork id
+            const bookmarked = data.some(item => item._id === id);
+            setIsBookmarked(bookmarked);
+        }
+    } catch (err) {
+        console.error('Failed to check bookmark status:', err);
+    }
+  };
+
+
   const fetchComments = async () => {
+    
     try {
       const response = await fetch(`http://localhost:8000/api/comments/${id}`);
       const data = await response.json();
@@ -152,6 +182,7 @@ const ArtworkDetail = ({ onLogout }) => {
   };
 
   const handleLike = async () => {
+    
     if (!currentUserId) {
       alert('Please login to like artworks');
       navigate('/login');
@@ -189,6 +220,7 @@ const ArtworkDetail = ({ onLogout }) => {
   };
 
   const handleBookmark = async () => {
+    
     if (!currentUserId) {
       alert('Please login to bookmark artworks');
       navigate('/login');
@@ -225,6 +257,7 @@ const ArtworkDetail = ({ onLogout }) => {
   };
 
   const handleCommentSubmit = async (e) => {
+    
     e.preventDefault();
     
     if (!currentUserId) {
@@ -269,6 +302,35 @@ const ArtworkDetail = ({ onLogout }) => {
     }
   };
 
+  
+  const handleDeleteArtwork = async () => {
+    if (!window.confirm('Are you absolutely sure you want to delete this artwork? This action is permanent and cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8000/api/artworks/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        
+        throw new Error(data.message || 'Failed to delete artwork.');
+      }
+
+      alert('Artwork deleted successfully!');
+      navigate('/home'); 
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    }
+  };
+
+
   if (loading) {
     return (
       <div className="page-container">
@@ -302,6 +364,9 @@ const ArtworkDetail = ({ onLogout }) => {
     );
   }
 
+  // Check if current user is the creator
+  const isCreator = artwork && artwork.creator && artwork.creator._id === currentUserId;
+
   return (
     <div className="page-container">
       <LeftBar onLogout={onLogout} />
@@ -314,7 +379,7 @@ const ArtworkDetail = ({ onLogout }) => {
           </button>
 
           <div className="artwork-detail">
-            {/* Media Section */}
+            
             <div className="media-section">
               {artwork.mediaType === 'image' && (
                 <img
@@ -347,7 +412,7 @@ const ArtworkDetail = ({ onLogout }) => {
               )}
             </div>
 
-            {/* Info Section */}
+            
             <div className="info-section">
               <div className="artwork-header">
                 <h1 className="detail-title">{artwork.title}</h1>
@@ -355,6 +420,17 @@ const ArtworkDetail = ({ onLogout }) => {
                   <span className="detail-category">{artwork.category}</span>
                 )}
               </div>
+
+              
+              {isCreator && (
+                <button 
+                  onClick={handleDeleteArtwork} 
+                  className="btn btn-danger btn-sm my-2 flex items-center space-x-1" 
+                >
+                  <Trash2 size={16} /> <span>Delete Artwork</span>
+                </button>
+              )}
+
 
               <div className="creator-info">
                 <div className="creator-avatar">
@@ -417,7 +493,7 @@ const ArtworkDetail = ({ onLogout }) => {
                   onClick={handleLike} 
                   className={`btn btn-like ${isLiked ? 'liked' : ''}`}
                 >
-                  {isLiked ? '❤️ Liked' : '🤍 Like'}
+                  {isLiked ? 'Liked' : 'Like'}
                 </button>
                 <button 
                   onClick={handleBookmark} 

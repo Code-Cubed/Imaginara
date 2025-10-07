@@ -52,6 +52,7 @@ const ArtworkList = ({ onLogout }) => {
       <LeftBar onLogout={onLogout} />
 
       <div className="flex-1 flex flex-col">
+        {/* TopBar is placed here */}
         <TopBar />
 
         <div className="gallery-container p-4 sm:p-6 flex-1 overflow-auto">
@@ -128,8 +129,8 @@ const ArtworkList = ({ onLogout }) => {
                     )}
                     <div className="artwork-overlay">
                       <div className="artwork-stats">
-                        <span>{artwork.likes.length}</span>
-                        <span> {artwork.views}</span>
+                        <span> {artwork.likes.length}</span>
+                        <span>  {artwork.views}</span>
                       </div>
                     </div>
                   </div>
