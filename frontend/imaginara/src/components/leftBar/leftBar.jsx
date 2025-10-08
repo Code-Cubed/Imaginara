@@ -10,7 +10,8 @@ import {
     Settings, 
     Search,
     Power,
-    Palette // Re-importing Palette for the main logo
+    Palette,
+    Mail
 } from 'lucide-react'; 
 
 const LeftBar = ({ onLogout }) => {
@@ -19,7 +20,7 @@ const LeftBar = ({ onLogout }) => {
   
   // Theme-aware colors
   const bgColor = theme === "dark" ? "#23272f" : "#fff";
-  const borderColor = theme === "dark" ? "#3c424d" : "#e9e9e9"; // Darker border in dark mode
+  const borderColor = theme === "dark" ? "#3c424d" : "#e9e9e9";
 
   const styles = {
     leftBar: {
@@ -32,8 +33,8 @@ const LeftBar = ({ onLogout }) => {
       position: "sticky",
       top: 0,
       padding: "16px 0px",
-      borderRight: `1px solid ${borderColor}`, // Apply theme border color
-      backgroundColor: bgColor, // Apply theme background color
+      borderRight: `1px solid ${borderColor}`,
+      backgroundColor: bgColor,
       zIndex: 100 
     },
     menuIcons: {
@@ -51,14 +52,13 @@ const LeftBar = ({ onLogout }) => {
       cursor: "pointer",
       borderRadius: "12px",
       transition: "all 0.3s ease",
-      backgroundColor: 'transparent' 
+      backgroundColor: 'transparent'
     },
     active: {
       backgroundColor: theme === 'dark' ? "#3c424d" : "#e0e0e0", 
       transform: "scale(1.1)",
     },
     lucideIcon: (isActive) => ({
-        // Active icon color (Blue/Purple) or Inactive icon color (Gray/Muted)
         color: isActive ? (theme === 'dark' ? '#92b4f4' : '#667eea') : (theme === 'dark' ? '#b0b8c4' : '#666'),
     }),
     logout: {
@@ -71,20 +71,15 @@ const LeftBar = ({ onLogout }) => {
       borderRadius: "12px",
       backgroundColor: "#f44336",
       transition: "all 0.3s ease",
+      marginTop: "16px"
     },
-    logoutIconStyle: {
-        color: '#fff',
-    },
-    // Style for the main Palette logo
-    logoStyle: {
-        color: theme === 'dark' ? '#92b4f4' : '#667eea', // Ensure logo is colored correctly
-        marginBottom: '16px' // Space below logo
-    }
+    logoutIconStyle: { color: '#fff' },
+    logoStyle: { color: theme === 'dark' ? '#92b4f4' : '#667eea', marginBottom: '16px' },
+    bottomIcons: { display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }
   };
 
-  // The /home link is removed from menuItems since it's now handled by the separate Logo Link
   const menuItems = [
-    { path: "/home", lucideIcon: Home, alt: "Home" }, // Keeping Home here as the first functional icon
+    { path: "/home", lucideIcon: Home, alt: "Home" },
     { path: "/addartwork", lucideIcon: PlusSquare, alt: "Add Artwork" },
     { path: "/discover", lucideIcon: Search, alt: "Discover" },
     { path: "/chatbot", lucideIcon: Bot, alt: "AI ChatBot" },
@@ -96,12 +91,11 @@ const LeftBar = ({ onLogout }) => {
     if (onLogout) onLogout();         
   };
 
-
   return (
     <div data-theme={theme} style={styles.leftBar}>
+      {/* Top Logo + Menu */}
       <div style={styles.menuIcons}>
-        
-        {/* LOGO BLOCK: Re-introduced as the prominent link at the top */}
+        {/* LOGO */}
         <Link
           to="/home"
           style={{
@@ -111,44 +105,39 @@ const LeftBar = ({ onLogout }) => {
           }}
           title="Home"
         >
-          <Palette 
-            size={32} 
-            style={{ color: styles.logoStyle.color }}
-          />
+          <Palette size={32} style={{ color: styles.logoStyle.color }} />
         </Link>
-       
-        {/* Mapped Menu Items */}
-        {menuItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            const linkStyle = {
-                ...styles.menuIcon,
-                ...(isActive ? styles.active : {}),
-            };
-            
-            const IconComponent = item.lucideIcon;
 
-            return (
-                <Link
-                    key={item.path}
-                    to={item.path}
-                    style={linkStyle}
-                    title={item.alt}
-                >
-                    <IconComponent 
-                        size={24} 
-                        style={styles.lucideIcon(isActive)}
-                    />
-                </Link>
-            );
+        {/* Main Menu Icons */}
+        {menuItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          const IconComponent = item.lucideIcon;
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              style={{ ...styles.menuIcon, ...(isActive ? styles.active : {}) }}
+              title={item.alt}
+            >
+              <IconComponent size={24} style={styles.lucideIcon(isActive)} />
+            </Link>
+          );
         })}
       </div>
 
-      {/* Logout Button at bottom */}
-      <div style={styles.logout} onClick={handleLogout} title="Logout">
-        <Power
-          size={24}
-          style={styles.logoutIconStyle}
-        />
+      {/* Bottom Icons: Contact + Logout */}
+      <div style={styles.bottomIcons}>
+        <Link
+          to="/contact"
+          style={{ ...styles.menuIcon, ...(location.pathname === "/contact" ? styles.active : {}) }}
+          title="Contact Us"
+        >
+          <Mail size={24} style={styles.lucideIcon(location.pathname === "/contact")} />
+        </Link>
+
+        <div style={styles.logout} onClick={handleLogout} title="Logout">
+          <Power size={24} style={styles.logoutIconStyle} />
+        </div>
       </div>
     </div>
   );

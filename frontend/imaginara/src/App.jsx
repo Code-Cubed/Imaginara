@@ -15,6 +15,7 @@ import ChatBot from './components/ChatBot/ChatBot';
 import ProtectedLayout from "./components/ProtectedLayout";
 import { ThemeProvider, ThemeContext } from "./Context/ThemeContext";
 import DiscoverUsers from './pages/Discover/DiscoverUsers';
+import ContactPage from './pages/Contact/ContactForm';
 function App() {
   return (
     <ThemeProvider>
@@ -147,6 +148,19 @@ function AppContent() {
                 </ProtectedRoute>
               }
             />
+
+            <Route
+              path="/contact"
+              element={
+                <ProtectedRoute>
+                  <ProtectedLayout onLogout={handleLogout}>
+                    <ContactPage />
+                  </ProtectedLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            
           {/* Default & Catch-all */}
           <Route
             path="/"
