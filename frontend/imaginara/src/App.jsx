@@ -11,6 +11,7 @@ import AddArtwork from "./pages/Artwork/Addartwork";
 import ExplorePage from "./pages/Home/ExplorePage";
 import ProfilePage from "./pages/Profile/ProfilePage";
 import Settings from "./pages/Settings/Settings";
+import ChatAI from "./pages/Messages/ChatAi"; // ✅ AI Chat page
 
 import ProtectedLayout from "./components/ProtectedLayout";
 import { ThemeProvider, ThemeContext } from "./Context/ThemeContext";
@@ -89,6 +90,12 @@ function AppContent() {
           <Route
             path="/settings"
             element={isAuthenticated ? <ProtectedLayout onLogout={handleLogout}><Settings onLogout={handleLogout} /></ProtectedLayout> : <Navigate to="/login" replace />}
+          />
+
+          {/* ✅ AI Chat Route */}
+          <Route
+            path="/messages"
+            element={isAuthenticated ? <ProtectedLayout onLogout={handleLogout}><ChatAI /></ProtectedLayout> : <Navigate to="/login" replace />}
           />
 
           {/* Default & Catch-all */}
