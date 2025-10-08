@@ -2,7 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 
-import { Bookmark, BookmarkCheck, Trash2, Edit, X, UserPlus, UserCheck } from 'lucide-react'; 
+import { 
+  Bookmark, 
+  BookmarkCheck, 
+  Trash2, 
+  Edit, 
+  X, 
+  UserPlus, 
+  UserCheck,
+  Download,
+  Clipboard // ✨ ADDED: Clipboard icon for copy fallback
+} from 'lucide-react'; 
 
 import './ArtworkDetail.css';
 
@@ -25,7 +35,9 @@ const ArtworkDetail = ({ onLogout }) => {
   
   // State for follow status
   const [isFollowing, setIsFollowing] = useState(false);
-
+  
+  // State for clipboard status
+  const [copied, setCopied] = useState(false); // ✨ NEW STATE
 
   // Get current user ID from token
   const getUserIdFromToken = () => {
@@ -483,6 +495,82 @@ const ArtworkDetail = ({ onLogout }) => {
           alert(err.message);
       }
   };
+  
+  // Force Download Handler (from previous request)
+  const handleDownload = async () => {
+    if (!artwork?.mediaUrl) return;
+
+    try {
+        const response = await fetch(artwork.mediaUrl);
+        if (!response.ok) {
+            throw new Error('Failed to fetch media for download.');
+        }
+
+        const blob = await response.blob();
+        
+        let fileExtension = '';
+        if (artwork.mediaType === 'image') {
+            fileExtension = blob.type.split('/')[1] || 'jpg';
+        } else if (artwork.mediaType === 'video') {
+            fileExtension = 'mp4';
+        } else if (artwork.mediaType === 'audio') {
+            fileExtension = 'mp3';
+        } else if (artwork.mediaType === 'document') {
+            fileExtension = 'pdf'; 
+        }
+        
+        const fileName = `${artwork.title.replace(/\s/g, '_')}.${fileExtension}`;
+
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', fileName); 
+        document.body.appendChild(link);
+        link.click();
+        
+        link.remove();
+        window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+        console.error('Download failed:', error);
+        alert('Could not start download. Please check the console for details.');
+    }
+  };
+  
+  // ✨ NEW FUNCTION: Share Handler
+  const handleShare = async () => {
+    // Construct the URL for the current artwork detail page
+    // NOTE: Replace 'window.location.origin' with your production base URL 
+    // (e.g., 'https://myartsite.com') if you are deploying to a specific domain.
+    const shareUrl = `${window.location.origin}/artwork/${id}`;
+
+    // 1. Try to use the Web Share API (native sharing)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: artwork.title || 'Check out this amazing artwork!',
+          text: `View "${artwork.title}" by ${artwork.creator?.name || 'an artist'} on our platform.`,
+          url: shareUrl,
+        });
+        console.log('Artwork successfully shared');
+      } catch (error) {
+        // User cancelled share or other error
+        if (error.name !== 'AbortError') {
+            console.error('Error sharing:', error);
+        }
+      }
+    } else {
+      // 2. Fallback: Copy URL to clipboard
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000); // Reset 'copied' state after 2 seconds
+      } catch (err) {
+        console.error('Failed to copy text:', err);
+        alert('Failed to automatically copy the link. Please copy the URL from the browser address bar.');
+      }
+    }
+  };
 
 
   if (loading) {
@@ -508,6 +596,8 @@ const ArtworkDetail = ({ onLogout }) => {
 
   // Check if current user is the creator
   const isCreator = artwork && artwork.creator && artwork.creator._id === currentUserId;
+  // Helper to determine if media is downloadable
+  const isDownloadable = artwork.mediaType === 'image' || artwork.mediaType === 'document' || artwork.mediaType === 'video' || artwork.mediaType === 'audio';
 
   return (
     <div className="detail-page-content-wrapper flex-1 p-4 sm:p-6">
@@ -542,7 +632,6 @@ const ArtworkDetail = ({ onLogout }) => {
               {artwork.mediaType === 'document' && (
                 <div className="document-viewer">
                   <div className="document-icon">📄</div>
-                  <p>{artwork.title}</p>
                   <a href={artwork.mediaUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
                     Open Document
                   </a>
@@ -711,8 +800,30 @@ const ArtworkDetail = ({ onLogout }) => {
                     </>
                   )}
                 </button>
-                <button className="btn btn-share">
-                  🔗 Share
+                
+                {isDownloadable && (
+                    <button 
+                      onClick={handleDownload} 
+                      className="btn btn-download flex items-center space-x-1"
+                    >
+                      <Download size={18} /> <span>Download</span>
+                    </button>
+                )}
+                
+                {/* ✨ UPDATED: Share Button */}
+                <button 
+                  onClick={handleShare} 
+                  className={`btn btn-share ${copied ? 'copied' : ''}`} // Add a class for visual feedback
+                >
+                  {copied ? (
+                    <>
+                      <Clipboard size={18} /> Copied!
+                    </>
+                  ) : (
+                    <>
+                      🔗 Share
+                    </>
+                  )}
                 </button>
               </div>
 
