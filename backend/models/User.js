@@ -10,7 +10,8 @@ const UserSchema = new mongoose.Schema({
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   bookmarks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Artwork' }],
-  role: { type: String, default: 'user' },
+  role: { type: String, default: 'user' }
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema);

@@ -9,4 +9,7 @@ router.post('/register', upload.single('avatar'), authController.register);
 
 router.post('/login', authController.login);
 
+router.post("/send-otp", authController.sendOtp); // send OTP to email
+router.post("/reset-password", authController.resetPasswordWithOtp); // reset with OTP
+
 module.exports = router;

@@ -10,6 +10,7 @@ import AddArtwork from "./pages/Artwork/Addartwork";
 import ExplorePage from "./pages/Home/ExplorePage";
 import ProfilePage from "./pages/Profile/ProfilePage";
 import Settings from "./pages/Settings/Settings";
+import ForgotPassword from './pages/Auth/ForgetPassword';
 import ChatBot from './components/ChatBot/ChatBot'; 
 import ProtectedLayout from "./components/ProtectedLayout";
 import { ThemeProvider, ThemeContext } from "./Context/ThemeContext";
@@ -67,7 +68,16 @@ function AppContent() {
             path="/signup"
             element={isAuthenticated ? <Navigate to="/home" replace /> : <SignUp onRegister={handleLogin} />}
           />
-
+          <Route
+          path="/forgot-password"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/home" replace />
+            ) : (
+              <ForgotPassword />
+            )
+          }
+        />
           {/* Protected Routes */}
           <Route
             path="/home"
