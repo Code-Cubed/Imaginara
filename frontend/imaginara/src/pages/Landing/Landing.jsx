@@ -1,20 +1,13 @@
-import React, { useEffect, useRef, useState, useContext } from 'react';
+// landing.jsx
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
-import { ThemeContext } from '../../Context/ThemeContext'; // <-- import ThemeContext
 import './landing.css';
 
 const Landing = () => {
   const navigate = useNavigate();
   const canvasRef = useRef(null);
   const [scrollY, setScrollY] = useState(0);
-
-  // Get theme and set colors
-  const { theme } = useContext(ThemeContext);
-  const textColor = theme === "dark" ? "#f3f4f6" : "#22223b";
-  const bgColor = theme === "dark" ? "#18181b" : "#fff";
-  const cardBg = theme === "dark" ? "#23272f" : "#fff";
-  const overlayBg = theme === "dark" ? "rgba(24,24,27,0.85)" : "rgba(255,255,255,0.85)";
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -72,6 +65,7 @@ const Landing = () => {
       meshes.push(mesh);
     }
 
+    // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
     
@@ -79,7 +73,7 @@ const Landing = () => {
     directionalLight.position.set(5, 5, 5);
     scene.add(directionalLight);
 
-    const pointLight = new THREE.PointLight(0xffffff, 0.5);
+    const pointLight = new THREE.PointLight(0x8b5cf6, 1, 100);
     pointLight.position.set(-5, 5, 0);
     scene.add(pointLight);
 
@@ -130,14 +124,7 @@ const Landing = () => {
   ];
 
   return (
-    <div
-      className="landing-container"
-      style={{
-        color: textColor,
-        background: bgColor,
-        transition: "background 0.3s, color 0.3s"
-      }}
-    >
+    <div className="landing-container">
       {/* 3D Background Canvas */}
       <canvas
         ref={canvasRef}
@@ -147,10 +134,7 @@ const Landing = () => {
       
       {/* Hero Section */}
       <section className="hero-section">
-        <div
-          className="hero-overlay"
-          style={{ background: overlayBg }}
-        />
+        <div className="hero-overlay" />
         
         <div className="hero-grid">
           {/* Left Content */}
@@ -168,14 +152,7 @@ const Landing = () => {
                 </p>
               </div>
               
-              <div className="hero-buttons">
-                <button className="btn btn-primary" onClick={() => navigate("/login")}>
-                  Login
-                </button>
-                <button className="btn btn-secondary" onClick={() => navigate("/signup")}>
-                  Sign Up
-                </button>
-              </div>
+              
 
               <div className="hero-stats">
                 <div className="stat-item">
@@ -201,11 +178,6 @@ const Landing = () => {
               src="https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?auto=format&fit=crop&w=600&q=80"
               alt="Creative art"
               className="hero-image"
-              style={{
-                boxShadow: theme === "dark"
-                  ? "0 8px 32px 0 rgba(0,0,0,0.7)"
-                  : "0 8px 32px 0 rgba(0,0,0,0.15)"
-              }}
             />
             <div className="hero-image-decoration" />
           </div>
@@ -220,7 +192,7 @@ const Landing = () => {
           </h2>
           
           <div className="features-grid">
-            <div className="feature-card" style={{ background: cardBg }}>
+            <div className="feature-card">
               <div className="feature-icon">🎨</div>
               <h3 className="feature-title">Share Your Art</h3>
               <p className="feature-description">
@@ -228,7 +200,7 @@ const Landing = () => {
               </p>
             </div>
             
-            <div className="feature-card" style={{ background: cardBg }}>
+            <div className="feature-card">
               <div className="feature-icon">✨</div>
               <h3 className="feature-title">Discover Inspiration</h3>
               <p className="feature-description">
@@ -236,7 +208,7 @@ const Landing = () => {
               </p>
             </div>
             
-            <div className="feature-card" style={{ background: cardBg }}>
+            <div className="feature-card">
               <div className="feature-icon">🤝</div>
               <h3 className="feature-title">Connect & Grow</h3>
               <p className="feature-description">
@@ -259,13 +231,13 @@ const Landing = () => {
           
           <div className="gallery-masonry">
             {photos.map((photo, idx) => (
-              <div key={idx} className="gallery-item" style={{ background: cardBg }}>
+              <div key={idx} className="gallery-item">
                 <img
                   src={photo}
                   alt={`Artwork ${idx + 1}`}
                   className="gallery-image"
                 />
-                <div className="gallery-overlay" style={{ background: overlayBg }}>
+                <div className="gallery-overlay">
                   <div>
                     <h4 className="gallery-info-title">Amazing Creation</h4>
                     <p className="gallery-info-author">by Creative Artist</p>
@@ -284,7 +256,7 @@ const Landing = () => {
 
       {/* CTA Section */}
       <section className="cta-section">
-        <div className="cta-container" style={{ background: cardBg }}>
+        <div className="cta-container">
           <div className="cta-content">
             <h2 className="cta-title">
               Ready to Share Your{' '}
@@ -303,7 +275,7 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="footer" style={{ background: cardBg }}>
+      <footer className="footer">
         <div className="footer-content">
           <p className="footer-text">© 2024 Imaginara. Where creativity comes alive.</p>
         </div>
@@ -313,3 +285,7 @@ const Landing = () => {
 };
 
 export default Landing;
+
+
+
+
