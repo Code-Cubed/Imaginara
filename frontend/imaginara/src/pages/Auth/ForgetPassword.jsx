@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import api from "../../api/api";
+import { useNavigate } from "react-router-dom";
 
 const ForgotPassword = () => {
+
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
@@ -36,12 +39,21 @@ const ForgotPassword = () => {
     try {
       await api.post("/api/auth/reset-password-otp", { email, otp, newPassword }); 
       // endpoint name changed to match backend function
-      setMessage("✅ Password reset successfully! You can now login.");
+      setMessage("✅ Password reset successfully! Redirecting to login...");
+
+      // clear fields
       setOtpSent(false);
       setEmail("");
       setOtp("");
       setNewPassword("");
-    } catch (err) {
+
+      setTimeout(() => {
+        navigate("/login"); 
+      }, 2000); // 2 second delay to let the user see the success message
+
+    } 
+    
+    catch (err) {
       setError(err.response?.data?.message || "Error resetting password");
     } finally {
       setLoading(false);

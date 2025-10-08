@@ -38,6 +38,7 @@ function AppContent() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setIsAuthenticated(false);
   };
 
@@ -49,7 +50,7 @@ function AppContent() {
 
   // Protected route wrapper
   const ProtectedRoute = ({ children }) =>
-    isAuthenticated ? children : <Navigate to="/login" replace />;
+    isAuthenticated ? children : <Navigate to="/landing" replace />;
 
   return (
     <div data-theme={theme} className="min-h-screen">
