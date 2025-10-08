@@ -127,22 +127,27 @@ const Login = ({ onLogin }) => {
 
 const styles = {
   container: {
+    position: "relative",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
     minHeight: "100vh",
-    background: "linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%)",
-    fontFamily: "'Inter', sans-serif",
     overflow: "hidden",
+    fontFamily: "'Inter', sans-serif",
     padding: "20px",
+    background: "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)",
+    animation: "gradientShift 10s ease infinite",
   },
+
+  
   card: {
     display: "flex",
     borderRadius: "25px",
     overflow: "hidden",
-    boxShadow: "0 20px 50px rgba(0,0,0,0.15)",
-    backgroundColor: "#ffffff",
-    transition: "transform 0.3s ease-in-out",
+    backdropFilter: "blur(10px)",
+    boxShadow: "0 15px 45px rgba(0,0,0,0.15)",
+    background: "rgba(255, 255, 255, 0.85)",
+    transition: "transform 0.4s ease, box-shadow 0.4s ease",
   },
   leftSection: {
     flex: 1.2,

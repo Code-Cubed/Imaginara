@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
-// Imported Trash2 for the delete button, and Edit/X for editing
 import { Bookmark, BookmarkCheck, Trash2, Edit, X } from 'lucide-react'; 
-import LeftBar from '../../components/leftBar/LeftBar';
 import './ArtworkDetail.css';
-import TopBar from '../../components/topBar/topBar';
+
 
 const ArtworkDetail = ({ onLogout }) => {
   const { id } = useParams();
@@ -429,33 +427,21 @@ const ArtworkDetail = ({ onLogout }) => {
 
   if (loading) {
     return (
-      <div className="page-container">
-        <LeftBar onLogout={onLogout} />
-        <div className="main-content">
-          <TopBar/>
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Loading artwork...</p>
-          </div>
-        </div>
+      <div className="loading-container p-6 flex-1">
+        <div className="loading-spinner"></div>
+        <p>Loading artwork...</p>
       </div>
     );
   }
 
   if (error || !artwork) {
     return (
-      <div className="page-container">
-        <LeftBar onLogout={onLogout} />
-        <div className="main-content">
-          <TopBar/>
-          <div className="error-container">
-            <h2>Error</h2>
-            <p>{error || 'Artwork not found'}</p>
-            <button onClick={() => navigate('/home')} className="btn btn-primary">
-              Back to Gallery
-            </button>
-          </div>
-        </div>
+      <div className="error-container p-6 flex-1">
+        <h2>Error</h2>
+        <p>{error || 'Artwork not found'}</p>
+        <button onClick={() => navigate('/home')} className="btn btn-primary">
+          Back to Gallery
+        </button>
       </div>
     );
   }
@@ -464,11 +450,7 @@ const ArtworkDetail = ({ onLogout }) => {
   const isCreator = artwork && artwork.creator && artwork.creator._id === currentUserId;
 
   return (
-    <div className="page-container">
-
-      
-      <div className="main-content">
-        <TopBar />
+    <div className="detail-page-content-wrapper flex-1 p-4 sm:p-6">
         <div className="detail-container">
           <button onClick={() => navigate('/home')} className="back-button">
             ← Back to Gallery
@@ -692,7 +674,6 @@ const ArtworkDetail = ({ onLogout }) => {
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 };

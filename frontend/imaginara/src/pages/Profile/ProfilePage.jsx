@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Trash2, Heart, MessageCircle, Eye, Edit, X } from "lucide-react";
 import { io } from "socket.io-client";
-import LeftBar from "../../components/leftBar/LeftBar";
 import "./ProfilePage.css";
 
 const ProfilePage = ({ onLogout }) => {
@@ -19,8 +18,8 @@ const ProfilePage = ({ onLogout }) => {
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editedCommentText, setEditedCommentText] = useState('');
   const [newAvatar, setNewAvatar] = useState(null);
-const [name, setName] = useState('');
-const [bio, setBio] = useState('');
+  const [name, setName] = useState('');
+  const [bio, setBio] = useState('');
 
 
   // Get userId from token
@@ -78,28 +77,29 @@ const [bio, setBio] = useState('');
       fetchComments();
     }
   }, [userId]);
-useEffect(() => {
-  if (profile?.user) {
-    setName(profile.user.name || '');
-    setBio(profile.user.bio || '');
-  }
-}, [profile]);
+
+  useEffect(() => {
+    if (profile?.user) {
+      setName(profile.user.name || '');
+      setBio(profile.user.bio || '');
+    }
+  }, [profile]);
 
   const fetchProfile = async () => {
-  try {
-    const response = await fetch(`http://localhost:8000/api/users/${userId}/profile`);
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Failed to fetch profile");
-    setProfile(data);
+    try {
+      const response = await fetch(`http://localhost:8000/api/users/${userId}/profile`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Failed to fetch profile");
+      setProfile(data);
 
-    // ✅ Save user with avatar in localStorage for TopBar
-    if (data.user) {
-      localStorage.setItem("user", JSON.stringify(data.user));
+      
+      if (data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
+    } catch (err) {
+      setError(err.message);
     }
-  } catch (err) {
-    setError(err.message);
-  }
-};
+  };
 
 
   const fetchUploads = async () => {
@@ -259,54 +259,56 @@ useEffect(() => {
       alert(err.message);
     }
   };
- const handleAvatarChange = (e) => {
-  const file = e.target.files[0];
-  if (file) setNewAvatar(file);
-};
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) setNewAvatar(file);
+  };
 
-const handleUpdateProfile = async () => {
-  const token = localStorage.getItem("token");
-  const formData = new FormData();
-  formData.append("name", name);
-  if (newAvatar) formData.append("avatar", newAvatar);
+  const handleUpdateProfile = async () => {
+    const token = localStorage.getItem("token");
+    const formData = new FormData();
+    formData.append("name", name);
+    if (newAvatar) formData.append("avatar", newAvatar);
 
-  try {
-    const response = await fetch("http://localhost:8000/api/users/update", {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
+    try {
+      const response = await fetch("http://localhost:8000/api/users/update", {
+        method: "PUT",
+        headers: { 
+          Authorization: `Bearer ${token}` 
+        },
+        body: formData,
+      });
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Failed to update profile");
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Failed to update profile");
 
-    setProfile((prev) => ({ ...prev, user: data.user }));
-    localStorage.setItem("user", JSON.stringify(data.user));
-    alert("Profile updated successfully!");
-  } catch (err) {
-    alert(err.message);
-  }
-};
+      setProfile((prev) => ({ ...prev, user: data.user }));
+      localStorage.setItem("user", JSON.stringify(data.user));
+      alert("Profile updated successfully!");
+    } catch (err) {
+      alert(err.message);
+    }
+  };
 
-const handleRemoveAvatar = async () => {
-  const token = localStorage.getItem("token");
+  const handleRemoveAvatar = async () => {
+    const token = localStorage.getItem("token");
 
-  try {
-    const response = await fetch("http://localhost:8000/api/users/remove-avatar", {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    try {
+      const response = await fetch("http://localhost:8000/api/users/remove-avatar", {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Failed to remove avatar");
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Failed to remove avatar");
 
-    setProfile((prev) => ({ ...prev, user: data.user }));
-    localStorage.setItem("user", JSON.stringify(data.user));
-    alert("Avatar removed successfully!");
-  } catch (err) {
-    alert(err.message);
-  }
-};
+      setProfile((prev) => ({ ...prev, user: data.user }));
+      localStorage.setItem("user", JSON.stringify(data.user));
+      alert("Avatar removed successfully!");
+    } catch (err) {
+      alert(err.message);
+    }
+  };
 
   const handleArtworkClick = (artworkId) => {
     navigate(`/artwork/${artworkId}`);
@@ -542,120 +544,109 @@ const handleRemoveAvatar = async () => {
 
   if (!profile) {
     return (
-      <div className="flex min-h-screen bg-gray-100">
-        <LeftBar onLogout={onLogout} />
-        <div className="flex-1 p-6">
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Loading profile...</p>
-          </div>
+      <div className="flex-1 p-6"> 
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading profile...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      
-
-      <main className="flex-1 p-4 sm:p-6">
-        <div className="max-w-6xl mx-auto">
-          {/* Profile Header */}
-          <div className="profile-header"> <div className="profile-avatar"> 
+    <div className="flex-1 p-4 sm:p-6"> 
+      <main className="max-w-6xl mx-auto">
+        {/* Profile Header */}
+        <div className="profile-header"> 
+          <div className="profile-avatar"> 
             {profile.user?.avatar ? 
           ( <img src={profile.user.avatar} alt={profile.user.name} /> ) : ( <User size={48} /> )} 
 
-   {/* Top-right corner stacked actions */}
-<div className="avatar-actions-top">
-  <label className="btn btn-outline">
-    <span className="btn-icon">✏️</span> Change
-    <input type="file" accept="image/*" onChange={handleAvatarChange} hidden />
-  </label>
-  <button onClick={handleRemoveAvatar} className="btn btn-danger">
-    <span className="btn-icon">🗑️</span> Remove
-  </button>
-  <button onClick={handleUpdateProfile} className="btn btn-primary">
-    <span className="btn-icon">💾</span> Save
-  </button>
-</div>
-
-
-  </div>
-
-  <div className="profile-info">
-    <input
-      type="text"
-      value={name}
-      onChange={(e) => setName(e.target.value)}
-      className="input input-bordered w-full max-w-xs"
-      placeholder="Your Name"
-    />
-    
-
-   
-
-    {/* Stats */}
-    <div className="profile-stats mt-4">
-      <div className="stat-item">
-        <span className="stat-value">{profile.stats?.uploads || 0}</span>
-        <span className="stat-label">Uploads</span>
-      </div>
-      <div className="stat-item">
-        <span className="stat-value">{profile.stats?.followers || 0}</span>
-        <span className="stat-label">Followers</span>
-      </div>
-      <div className="stat-item">
-        <span className="stat-value">{profile.stats?.following || 0}</span>
-        <span className="stat-label">Following</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-
-          {/* Tabs */}
-          <div className="profile-tabs">
-            <button
-              className={`tab ${activeTab === "uploads" ? "active" : ""}`}
-              onClick={() => setActiveTab("uploads")}
-            >
-              Uploads ({uploads.length})
+          {/* Top-right corner stacked actions */}
+          <div className="avatar-actions-top">
+            <label className="btn btn-outline">
+              <span className="btn-icon">✏️</span> Change
+              <input type="file" accept="image/*" onChange={handleAvatarChange} hidden />
+            </label>
+            <button onClick={handleRemoveAvatar} className="btn btn-danger">
+              <span className="btn-icon">🗑️</span> Remove
             </button>
-            <button
-              className={`tab ${activeTab === "bookmarks" ? "active" : ""}`}
-              onClick={() => setActiveTab("bookmarks")}
-            >
-              Bookmarks ({bookmarks.length})
-            </button>
-            <button
-              className={`tab ${activeTab === "likes" ? "active" : ""}`}
-              onClick={() => setActiveTab("likes")}
-            >
-              Likes ({likes.length})
-            </button>
-            <button
-              className={`tab ${activeTab === "comments" ? "active" : ""}`}
-              onClick={() => setActiveTab("comments")}
-            >
-              Comments ({comments.length})
+            <button onClick={handleUpdateProfile} className="btn btn-primary">
+              <span className="btn-icon">💾</span> Save
             </button>
           </div>
+        </div>
 
-          {/* Content */}
-          <div className="profile-content">{renderContent()}</div>
-
-          {/* Danger Zone */}
-          <div className="danger-zone">
-            <h3 className="danger-title">Danger Zone</h3>
-            <p className="danger-description">
-              Once you delete your account, there is no going back. All your artworks,
-              comments, and data will be permanently deleted.
-            </p>
-            <button onClick={handleDeleteAccount} className="btn-danger">
-              <Trash2 size={18} />
-              Delete Account
-            </button>
+        <div className="profile-info">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="input input-bordered w-full max-w-xs"
+            placeholder="Your Name"
+          />
+          
+          {/* Stats */}
+          <div className="profile-stats mt-4">
+            <div className="stat-item">
+              <span className="stat-value">{profile.stats?.uploads || 0}</span>
+              <span className="stat-label">Uploads</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-value">{profile.stats?.followers || 0}</span>
+              <span className="stat-label">Followers</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-value">{profile.stats?.following || 0}</span>
+              <span className="stat-label">Following</span>
+            </div>
           </div>
+        </div>
+      </div>
+
+
+        {/* Tabs */}
+        <div className="profile-tabs">
+          <button
+            className={`tab ${activeTab === "uploads" ? "active" : ""}`}
+            onClick={() => setActiveTab("uploads")}
+          >
+            Uploads ({uploads.length})
+          </button>
+          <button
+            className={`tab ${activeTab === "bookmarks" ? "active" : ""}`}
+            onClick={() => setActiveTab("bookmarks")}
+          >
+            Bookmarks ({bookmarks.length})
+          </button>
+          <button
+            className={`tab ${activeTab === "likes" ? "active" : ""}`}
+            onClick={() => setActiveTab("likes")}
+          >
+            Likes ({likes.length})
+          </button>
+          <button
+            className={`tab ${activeTab === "comments" ? "active" : ""}`}
+            onClick={() => setActiveTab("comments")}
+          >
+            Comments ({comments.length})
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="profile-content">{renderContent()}</div>
+
+        {/* Danger Zone */}
+        <div className="danger-zone">
+          <h3 className="danger-title">Danger Zone</h3>
+          <p className="danger-description">
+            Once you delete your account, there is no going back. All your artworks,
+            comments, and data will be permanently deleted.
+          </p>
+          <button onClick={handleDeleteAccount} className="btn-danger">
+            <Trash2 size={18} />
+            Delete Account
+          </button>
         </div>
       </main>
     </div>
