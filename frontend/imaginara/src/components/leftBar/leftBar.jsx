@@ -10,7 +10,8 @@ import {
     Settings, 
     Search,
     Power,
-    Palette // Re-importing Palette for the main logo
+    BarChart2,
+    Palette 
 } from 'lucide-react'; 
 
 const LeftBar = ({ onLogout }) => {
@@ -87,6 +88,7 @@ const LeftBar = ({ onLogout }) => {
     { path: "/home", lucideIcon: Home, alt: "Home" }, // Keeping Home here as the first functional icon
     { path: "/addartwork", lucideIcon: PlusSquare, alt: "Add Artwork" },
     { path: "/discover", lucideIcon: Search, alt: "Discover" },
+    {path:"/analytics", lucideIcon: BarChart2, alt:"Analytics"},
     { path: "/chatbot", lucideIcon: Bot, alt: "AI ChatBot" },
     { path: "/settings", lucideIcon: Settings, alt: "Settings" },
   ];
@@ -116,6 +118,9 @@ const LeftBar = ({ onLogout }) => {
             style={{ color: styles.logoStyle.color }}
           />
         </Link>
+
+       
+
        
         {/* Mapped Menu Items */}
         {menuItems.map((item) => {

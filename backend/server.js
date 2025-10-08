@@ -13,7 +13,7 @@ const commentRoutes = require('./routes/comments');
 const userRoutes = require('./routes/users');
 const followRoutes = require('./routes/follow');
 const { Server } = require('socket.io');
-
+const analyticsRoutes = require('./routes/analytics');
 const app = express();
 require('./config/passport');
 // Middlewares
@@ -39,6 +39,7 @@ app.use('/api/artworks', artworkRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/follow', followRoutes);
+app.use('/api/analytics', analyticsRoutes);
 // Create HTTP server
 const server = http.createServer(app);
 

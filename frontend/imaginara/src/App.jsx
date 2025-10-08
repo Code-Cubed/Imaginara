@@ -16,6 +16,7 @@ import ProtectedLayout from "./components/ProtectedLayout";
 import { ThemeProvider, ThemeContext } from "./Context/ThemeContext";
 import DiscoverUsers from './pages/Discover/DiscoverUsers';
 import OAuthCallback from './pages/Auth/OAuthCallback';
+import AnalyticsDashboard from './pages/Analytics/AnalyticsDashboard';
 function App() {
   return (
     <ThemeProvider>
@@ -140,6 +141,16 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+
+           <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout onLogout={handleLogout}><AnalyticsDashboard onLogout={handleLogout} /></ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+
           <Route
               path="/discover"
               element={
