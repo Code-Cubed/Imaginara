@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ThemeContext } from '../../Context/ThemeContext';
 
 const AddArtwork = ({ onLogout }) => {
   const navigate = useNavigate();
+  const { theme } = useContext(ThemeContext);
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -12,13 +14,15 @@ const AddArtwork = ({ onLogout }) => {
     mediaType: 'image',
     file: null,
   });
+
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [tagLoading, setTagLoading] = useState(false);
 
   const categories = [
-    'Art', 'Photography', 'Writing', 'Performance', 
+    'Art', 'Photography', 'Writing', 'Performance',
     'Digital Art', 'Sculpture', 'Music', 'Dance', 'Other'
   ];
 
@@ -42,7 +46,6 @@ const AddArtwork = ({ onLogout }) => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     if (file.size > 50 * 1024 * 1024) {
       setError('File size must be less than 50MB');
       return;
@@ -58,6 +61,43 @@ const AddArtwork = ({ onLogout }) => {
     } else {
       setPreview(null);
     }
+
+    // ✅ Automatically generate AI tags for images
+    if (file.type.startsWith('image/')) {
+      generateAITags(file);
+    }
+  };
+
+  // ✅ AI tag generation function
+  const generateAITags = async (file) => {
+    setTagLoading(true);
+    setError('');
+    try {
+      const form = new FormData();
+      form.append('file', file);
+
+      const res = await fetch('http://localhost:8000/api/auto-tag-2', {
+        method: 'POST',
+        body: form,
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to generate tags');
+
+      setFormData(prev => ({ ...prev, tags: data.tags.join(', ') }));
+    } catch (err) {
+      setError(err.message || 'AI tag generation failed');
+    } finally {
+      setTagLoading(false);
+    }
+  };
+
+  const handleGenerateTags = () => {
+    if (!formData.file || formData.mediaType !== 'image') {
+      setError('Please upload an image first to generate tags');
+      return;
+    }
+    generateAITags(formData.file);
   };
 
   const handleSubmit = async (e) => {
@@ -98,7 +138,6 @@ const AddArtwork = ({ onLogout }) => {
       });
       setPreview(null);
       setSuccess('Artwork uploaded successfully!');
-
       setTimeout(() => navigate('/home'), 2000);
     } catch (err) {
       setError(err.message || 'Failed to upload artwork');
@@ -106,7 +145,7 @@ const AddArtwork = ({ onLogout }) => {
       setLoading(false);
     }
   };
-  const { theme } = React.useContext(ThemeContext);
+
   return (
     <div data-theme={theme} className="min-h-screen flex flex-col items-center py-8">
       <div className="w-full max-w-2xl mx-auto px-4">
@@ -115,29 +154,17 @@ const AddArtwork = ({ onLogout }) => {
           <p className="text-base text-gray-500">Share your creative work with the community</p>
         </div>
 
-        {error && (
-          <div className="mb-4 text-red-700 border border-red-300 rounded px-4 py-2 text-sm">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="mb-4 text-green-700 border border-green-300 rounded px-4 py-2 text-sm">
-            {success}
-          </div>
-        )}
+        {error && <div className="mb-4 text-red-700 border border-red-300 rounded px-4 py-2 text-sm">{error}</div>}
+        {success && <div className="mb-4 text-green-700 border border-green-300 rounded px-4 py-2 text-sm">{success}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-6">
+
           {/* Media Type */}
           <div>
-            <label className="block font-medium mb-2">
-              Media Type <span className="text-red-500">*</span>
-            </label>
+            <label className="block font-medium mb-2">Media Type <span className="text-red-500">*</span></label>
             <div className="flex flex-wrap gap-4">
               {mediaTypes.map((type) => (
-                <label
-                  key={type.value}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
+                <label key={type.value} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
                     name="mediaType"
@@ -154,25 +181,17 @@ const AddArtwork = ({ onLogout }) => {
 
           {/* File Upload */}
           <div>
-            <label className="block font-medium mb-2">
-              Upload File <span className="text-red-500">*</span>
-            </label>
+            <label className="block font-medium mb-2">Upload File <span className="text-red-500">*</span></label>
             <div className="flex flex-col items-center">
               {preview ? (
                 <div className="flex flex-col items-center gap-2">
-                  {formData.mediaType === 'image' && (
-                    <img src={preview} alt="Preview" className="w-48 h-48 object-contain rounded shadow" />
-                  )}
-                  {formData.mediaType === 'video' && (
-                    <video src={preview} controls className="w-48 h-48 rounded shadow" />
-                  )}
+                  {formData.mediaType === 'image' && <img src={preview} alt="Preview" className="w-48 h-48 object-contain rounded shadow" />}
+                  {formData.mediaType === 'video' && <video src={preview} controls className="w-48 h-48 rounded shadow" />}
                   <button
                     type="button"
                     onClick={() => { setFormData({ ...formData, file: null }); setPreview(null); }}
                     className="text-xs text-red-500 hover:underline mt-1"
-                  >
-                    ✕ Remove
-                  </button>
+                  >✕ Remove</button>
                 </div>
               ) : (
                 <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer w-full">
@@ -192,9 +211,7 @@ const AddArtwork = ({ onLogout }) => {
 
           {/* Title */}
           <div>
-            <label className="block font-medium mb-2">
-              Title <span className="text-red-500">*</span>
-            </label>
+            <label className="block font-medium mb-2">Title <span className="text-red-500">*</span></label>
             <input
               type="text"
               name="title"
@@ -208,9 +225,7 @@ const AddArtwork = ({ onLogout }) => {
 
           {/* Category */}
           <div>
-            <label className="block font-medium mb-2">
-              Category <span className="text-red-500">*</span>
-            </label>
+            <label className="block font-medium mb-2">Category <span className="text-red-500">*</span></label>
             <select
               name="category"
               value={formData.category}
@@ -236,8 +251,8 @@ const AddArtwork = ({ onLogout }) => {
             />
           </div>
 
-          {/* Tags */}
-          <div>
+          {/* Tags + AI Generate Button */}
+          <div className="flex flex-col gap-2">
             <label className="block font-medium mb-2">Tags (comma-separated)</label>
             <input
               type="text"
@@ -247,9 +262,19 @@ const AddArtwork = ({ onLogout }) => {
               className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
               placeholder="e.g., abstract, colorful, nature"
             />
+            {formData.mediaType === 'image' && (
+              <button
+                type="button"
+                onClick={handleGenerateTags}
+                disabled={tagLoading}
+                className="self-start px-3 py-1 rounded bg-green-500 text-white text-sm hover:bg-green-600 transition disabled:opacity-60"
+              >
+                {tagLoading ? 'Generating...' : 'Generate AI Tags'}
+              </button>
+            )}
           </div>
 
-          {/* Buttons */}
+          {/* Submit Buttons */}
           <div className="flex justify-end gap-4 pt-2">
             <button
               type="button"

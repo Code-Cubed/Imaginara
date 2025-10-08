@@ -6,10 +6,19 @@ const { uploadToCloudinary } = require('../middlewares/upload');
 exports.createArtwork = async (req, res) => {
   try {
     const { title, description, tags = [], category, mediaType } = req.body;
+    console.log('Creating artwork with data:', { title, description, tags, category, mediaType });
+    
+    
+    
     if (!req.file) return res.status(400).json({ message: 'No file' });
+    
+    
     const uploaded = await uploadToCloudinary(req.file.buffer, 'gallery/media');
+    console.log('Uploaded to Cloudinary:', uploaded);
+    
+    
     const thumb = uploaded.eager && uploaded.eager[0] ? uploaded.eager[0].secure_url : uploaded.secure_url;
-
+    console.log('Thumbnail URL:', thumb);
     const art = await Artwork.create({
       title,
       description,
@@ -31,7 +40,8 @@ exports.createArtwork = async (req, res) => {
     }
 
     res.json(art);
-  } catch (err) { 
+  } catch (err) {
+    console.log(err);
     res.status(500).json({ message: err.message }); 
   }
 };
