@@ -11,7 +11,8 @@ import {
     Search,
     Power,
     BarChart2,
-    Palette 
+    Palette,
+    Sparkles 
 } from 'lucide-react'; 
 
 const LeftBar = ({ onLogout }) => {
@@ -89,6 +90,7 @@ const LeftBar = ({ onLogout }) => {
     { path: "/addartwork", lucideIcon: PlusSquare, alt: "Add Artwork" },
     { path: "/discover", lucideIcon: Search, alt: "Discover" },
     {path:"/analytics", lucideIcon: BarChart2, alt:"Analytics"},
+    {path:"/similarity-search", lucideIcon: Sparkles, alt:"Similarity Search"},
     { path: "/chatbot", lucideIcon: Bot, alt: "AI ChatBot" },
     { path: "/settings", lucideIcon: Settings, alt: "Settings" },
   ];

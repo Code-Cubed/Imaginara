@@ -18,8 +18,12 @@ exports.createArtwork = async (req, res) => {
       mediaType: mediaType || 'image',
       creator: req.user._id,
       tags: typeof tags === 'string' ? tags.split(',').map(t => t.trim()) : tags,
-      category
+      category,
+      embeddingsGenerated: false // Will be generated asynchronously
     });
+
+    // Generate embeddings asynchronously (don't wait)
+    generateEmbeddingsAsync(art._id);
 
     // Emit socket event for new upload
     const io = req.app.get('io');
@@ -33,6 +37,41 @@ exports.createArtwork = async (req, res) => {
     res.json(art);
   } catch (err) { 
     res.status(500).json({ message: err.message }); 
+  }
+};
+
+const generateEmbeddingsAsync = async (artworkId) => {
+  try {
+    const { 
+      generateTextEmbedding, 
+      generateImageEmbedding, 
+      generateArtworkText 
+    } = require('../utils/similarityService');
+    
+    const artwork = await Artwork.findById(artworkId);
+    if (!artwork) return;
+
+    // Generate text embedding
+    const artworkText = generateArtworkText(artwork);
+    const textEmbedding = await generateTextEmbedding(artworkText);
+
+    // Generate image embedding (only for images)
+    let imageEmbedding = null;
+    if (artwork.mediaType === 'image' && artwork.mediaUrl) {
+      imageEmbedding = await generateImageEmbedding(artwork.mediaUrl);
+    }
+
+    // Update artwork with embeddings
+    artwork.textEmbedding = textEmbedding;
+    if (imageEmbedding) {
+      artwork.imageEmbedding = imageEmbedding;
+    }
+    artwork.embeddingsGenerated = true;
+
+    await artwork.save();
+    console.log(`Embeddings generated for artwork ${artworkId}`);
+  } catch (error) {
+    console.error(`Failed to generate embeddings for ${artworkId}:`, error);
   }
 };
 
@@ -72,6 +111,7 @@ exports.incrementView = async (req, res) => {
     res.status(500).json({ message: err.message }); 
   }
 };
+
 
 exports.listArtworks = async (req, res) => {
   try {

@@ -14,6 +14,7 @@ const userRoutes = require('./routes/users');
 const followRoutes = require('./routes/follow');
 const { Server } = require('socket.io');
 const analyticsRoutes = require('./routes/analytics');
+const similarityRoutes = require('./routes/similarity');
 const app = express();
 require('./config/passport');
 // Middlewares
@@ -40,6 +41,7 @@ app.use('/api/comments', commentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/follow', followRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/similarity', similarityRoutes);
 // Create HTTP server
 const server = http.createServer(app);
 
