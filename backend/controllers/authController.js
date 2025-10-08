@@ -29,6 +29,7 @@ exports.register = async (req, res) => {
       email,
       password: hashed,
       avatar: avatarUrl,
+      provider: 'local', // ✅ NEW
     });
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
@@ -54,13 +55,25 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'Invalid credentials' });
 
+    // ✅ NEW: Check if user is OAuth user
+    if (user.provider !== 'local' || !user.password) {
+      return res.status(400).json({ 
+        message: `This account was created with ${user.provider}. Please use ${user.provider} login.` 
+      });
+    }
+
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) return res.status(400).json({ message: 'Invalid credentials' });
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
     res.json({
       token,
-      user: { id: user._id, name: user.name, email: user.email },
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        email: user.email,
+        avatar: user.avatar 
+      },
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -76,10 +89,8 @@ exports.sendOtp = async (req, res) => {
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Remove existing OTPs for this email
     await EmailOTP.deleteMany({ email });
 
-    // Save new OTP
     await EmailOTP.create({
       email,
       otp,
@@ -107,7 +118,6 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ message: 'Invalid OTP' });
     }
 
-    // Check expiry (10 minutes)
     const isExpired = Date.now() - record.createdAt > 10 * 60 * 1000;
     if (isExpired) {
       await EmailOTP.deleteMany({ email });
@@ -125,28 +135,31 @@ exports.verifyOtp = async (req, res) => {
 exports.resetPasswordWithOtp = async (req, res) => {
   const { email, otp, newPassword } = req.body;
   try {
-    // Step 1: Find OTP record
     const record = await EmailOTP.findOne({ email, otp });
     if (!record) {
       return res.status(400).json({ message: 'Invalid OTP' });
     }
 
-    // Step 2: Check expiry (10 minutes)
     const isExpired = Date.now() - record.createdAt > 10 * 60 * 1000;
     if (isExpired) {
       await EmailOTP.deleteMany({ email });
       return res.status(400).json({ message: 'OTP expired' });
     }
 
-    // Step 3: Update password
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: 'User not found' });
+
+    // ✅ NEW: Check if OAuth user
+    if (user.provider !== 'local') {
+      return res.status(400).json({ 
+        message: `Cannot reset password for ${user.provider} accounts` 
+      });
+    }
 
     const hashedPass = await bcrypt.hash(newPassword, 10);
     user.password = hashedPass;
     await user.save();
 
-    // Step 4: Delete OTP after use
     await EmailOTP.deleteMany({ email });
 
     res.json({ message: 'Password reset successfully' });
@@ -154,4 +167,33 @@ exports.resetPasswordWithOtp = async (req, res) => {
     console.error(err);
     res.status(500).json({ message: 'Something went wrong' });
   }
+};
+
+// ============================================
+// ✅ NEW: OAUTH CALLBACK HANDLERS
+// ============================================
+
+// Handle successful OAuth authentication
+exports.oauthSuccess = (req, res) => {
+  try {
+    // Generate JWT token for the authenticated user
+    const token = jwt.sign(
+      { id: req.user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    // Redirect to frontend with token
+    const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${frontendURL}/auth/callback?token=${token}`);
+  } catch (err) {
+    console.error('OAuth success error:', err);
+    res.redirect(`${process.env.FRONTEND_URL}/login?error=oauth_failed`);
+  }
+};
+
+// Handle OAuth failure
+exports.oauthFailure = (req, res) => {
+  const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
+  res.redirect(`${frontendURL}/login?error=oauth_failed`);
 };

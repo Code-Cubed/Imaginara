@@ -5,6 +5,8 @@ const express = require('express');
 const http = require('http');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const session = require('express-session'); // ✅ NEW
+const passport = require('passport');
 const artworkRoutes = require('./routes/artworks');
 const authRoutes = require('./routes/auth');
 const commentRoutes = require('./routes/comments');
@@ -13,11 +15,21 @@ const followRoutes = require('./routes/follow');
 const { Server } = require('socket.io');
 
 const app = express();
-
+require('./config/passport');
 // Middlewares
 app.use(cors());
 app.use(express.json());
-
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // true in production
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 // Connect to MongoDB
 connectDB();
 

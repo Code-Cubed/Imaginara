@@ -1,0 +1,87 @@
+/* src/components/OAuthButtons/OAuthButtons.css */
+
+.oauth-container {
+    width: 100%;
+    margin-top: 20px;
+    margin-bottom: 5px; /* Added some space below the buttons */
+}
+
+/* --- Divider Style --- */
+.oauth-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 15px 0;
+    color: #a0a0a0;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.oauth-divider::before,
+.oauth-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.oauth-divider:not(:empty)::before {
+    margin-right: .5em;
+}
+
+.oauth-divider:not(:empty)::after {
+    margin-left: .5em;
+}
+
+
+/* --- Buttons Container --- */
+.oauth-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* --- Individual Button Style --- */
+.oauth-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid #d0d7de;
+    background-color: #ffffff;
+    color: #333;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.oauth-btn:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+/* --- Icon Style --- */
+.oauth-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+}
+
+/* Specific button overrides for branding (optional) */
+.google-btn {
+    border-color: #dadce0;
+    color: #3c4043;
+}
+.google-btn:hover {
+    background-color: #f8f8f8;
+}
+
+.github-btn {
+    border-color: #333;
+    color: #333;
+}
+.github-btn:hover {
+    background-color: #f0f0f0;
+}

@@ -15,6 +15,7 @@ import ChatBot from './components/ChatBot/ChatBot';
 import ProtectedLayout from "./components/ProtectedLayout";
 import { ThemeProvider, ThemeContext } from "./Context/ThemeContext";
 import DiscoverUsers from './pages/Discover/DiscoverUsers';
+import OAuthCallback from './pages/Auth/OAuthCallback';
 function App() {
   return (
     <ThemeProvider>
@@ -69,6 +70,8 @@ function AppContent() {
             path="/signup"
             element={isAuthenticated ? <Navigate to="/home" replace /> : <SignUp onRegister={handleLogin} />}
           />
+           <Route path="/auth/callback" element={<OAuthCallback 
+           onLogin={handleLogin} />} />
           <Route
           path="/forgot-password"
           element={
