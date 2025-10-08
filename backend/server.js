@@ -9,6 +9,7 @@ const artworkRoutes = require('./routes/artworks');
 const authRoutes = require('./routes/auth');
 const commentRoutes = require('./routes/comments');
 const userRoutes = require('./routes/users');
+const followRoutes = require('./routes/follow');
 const { Server } = require('socket.io');
 
 const app = express();
@@ -25,7 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/artworks', artworkRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/users', userRoutes);
-
+app.use('/api/follow', followRoutes);
 // Create HTTP server
 const server = http.createServer(app);
 

@@ -10,6 +10,9 @@ router.get('/:userId/uploads', userController.getUserUploads);
 router.get('/:userId/likes', userController.getUserLikes);
 router.get('/:userId/comments', userController.getUserComments);
 
+router.get('/discover', auth, userController.discoverUsers);
+router.get('/search', auth, userController.searchUsers);
+router.get('/popular', userController.getPopularUsers);
 // Protected routes
 router.get('/:userId/bookmarks', auth, userController.getUserBookmarks);
 router.delete('/account', auth, userController.deleteAccount);

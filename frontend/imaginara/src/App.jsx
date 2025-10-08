@@ -14,7 +14,7 @@ import ForgotPassword from './pages/Auth/ForgetPassword';
 import ChatBot from './components/ChatBot/ChatBot'; 
 import ProtectedLayout from "./components/ProtectedLayout";
 import { ThemeProvider, ThemeContext } from "./Context/ThemeContext";
-
+import DiscoverUsers from './pages/Discover/DiscoverUsers';
 function App() {
   return (
     <ThemeProvider>
@@ -103,6 +103,7 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/chatbot"
             element={
@@ -135,13 +136,23 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
-
+          <Route
+              path="/discover"
+              element={
+                <ProtectedRoute>
+                  <ProtectedLayout onLogout={handleLogout}>
+                    <DiscoverUsers />
+                  </ProtectedLayout>
+                </ProtectedRoute>
+              }
+            />
           {/* Default & Catch-all */}
           <Route
             path="/"
             element={isAuthenticated ? <Navigate to="/home" replace /> : <Navigate to="/landing" replace />}
           />
           <Route path="*" element={<Navigate to="/" replace />} />
+
         </Routes>
       </Router>
     </div>

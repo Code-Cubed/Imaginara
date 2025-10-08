@@ -1,11 +1,25 @@
 import React, { useContext } from "react";
 import { ThemeContext } from "../../Context/ThemeContext";
 import { Link, useLocation } from "react-router-dom";
+import { 
+    Users, 
+    LogOut, 
+    Home, 
+    PlusSquare, 
+    Bot, 
+    Settings, 
+    Search,
+    Power,
+    Palette // Re-importing Palette for the main logo
+} from 'lucide-react'; 
 
 const LeftBar = ({ onLogout }) => {
   const location = useLocation(); 
   const { theme } = useContext(ThemeContext);
+  
+  // Theme-aware colors
   const bgColor = theme === "dark" ? "#23272f" : "#fff";
+  const borderColor = theme === "dark" ? "#3c424d" : "#e9e9e9"; // Darker border in dark mode
 
   const styles = {
     leftBar: {
@@ -18,7 +32,9 @@ const LeftBar = ({ onLogout }) => {
       position: "sticky",
       top: 0,
       padding: "16px 0px",
-      borderRight: "1px solid #e9e9e9",
+      borderRight: `1px solid ${borderColor}`, // Apply theme border color
+      backgroundColor: bgColor, // Apply theme background color
+      zIndex: 100 
     },
     menuIcons: {
       display: "flex",
@@ -35,15 +51,16 @@ const LeftBar = ({ onLogout }) => {
       cursor: "pointer",
       borderRadius: "12px",
       transition: "all 0.3s ease",
+      backgroundColor: 'transparent' 
     },
     active: {
-      backgroundColor: "#e0e0e0", // Highlight color
+      backgroundColor: theme === 'dark' ? "#3c424d" : "#e0e0e0", 
       transform: "scale(1.1)",
     },
-    logo: {
-      width: "32px",
-      height: "32px",
-    },
+    lucideIcon: (isActive) => ({
+        // Active icon color (Blue/Purple) or Inactive icon color (Gray/Muted)
+        color: isActive ? (theme === 'dark' ? '#92b4f4' : '#667eea') : (theme === 'dark' ? '#b0b8c4' : '#666'),
+    }),
     logout: {
       width: "48px",
       height: "48px",
@@ -55,65 +72,82 @@ const LeftBar = ({ onLogout }) => {
       backgroundColor: "#f44336",
       transition: "all 0.3s ease",
     },
-    logoutIcon: {
-      width: "24px",
-      height: "24px",
-      filter: "invert(1)",
+    logoutIconStyle: {
+        color: '#fff',
     },
+    // Style for the main Palette logo
+    logoStyle: {
+        color: theme === 'dark' ? '#92b4f4' : '#667eea', // Ensure logo is colored correctly
+        marginBottom: '16px' // Space below logo
+    }
   };
 
+  // The /home link is removed from menuItems since it's now handled by the separate Logo Link
   const menuItems = [
-    { path: "/home", icon: "https://cdn-icons-png.flaticon.com/512/1946/1946436.png", alt: "Home" },
-    { path: "/addartwork", icon: "https://cdn-icons-png.flaticon.com/512/1828/1828817.png", alt: "Add Artwork" },
-    { path: "/updates", icon: "https://cdn-icons-png.flaticon.com/512/1828/1828899.png", alt: "Updates" },
-    { path: "/chatbot", icon: "https://cdn-icons-png.flaticon.com/512/2462/2462719.png", alt: "AI ChatBot" }, 
-    { path: "/settings", icon: "https://cdn-icons-png.flaticon.com/512/3524/3524659.png", alt: "Settings" },
+    { path: "/home", lucideIcon: Home, alt: "Home" }, // Keeping Home here as the first functional icon
+    { path: "/addartwork", lucideIcon: PlusSquare, alt: "Add Artwork" },
+    { path: "/discover", lucideIcon: Search, alt: "Discover" },
+    { path: "/chatbot", lucideIcon: Bot, alt: "AI ChatBot" },
+    { path: "/settings", lucideIcon: Settings, alt: "Settings" },
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem("token"); // clear token
-    if (onLogout) onLogout();         // update App state
+    localStorage.removeItem("token"); 
+    if (onLogout) onLogout();         
   };
 
 
   return (
-    <div data-theme={theme} style={{ ...styles.leftBar }}>
+    <div data-theme={theme} style={styles.leftBar}>
       <div style={styles.menuIcons}>
-        {/* Logo */}
+        
+        {/* LOGO BLOCK: Re-introduced as the prominent link at the top */}
         <Link
           to="/home"
           style={{
             ...styles.menuIcon,
-            ...(location.pathname === "/home" ? styles.active : {}),
+            ...(location.pathname === "/" || location.pathname === "/home" ? styles.active : {}),
+            ...styles.logoStyle
           }}
+          title="Home"
         >
-          <img
-            src="https://cdn-icons-png.flaticon.com/512/888/888879.png"
-            alt="Logo"
-            style={styles.logo}
+          <Palette 
+            size={32} 
+            style={{ color: styles.logoStyle.color }}
           />
         </Link>
+       
+        {/* Mapped Menu Items */}
+        {menuItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            const linkStyle = {
+                ...styles.menuIcon,
+                ...(isActive ? styles.active : {}),
+            };
+            
+            const IconComponent = item.lucideIcon;
 
-        {menuItems.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            style={{
-              ...styles.menuIcon,
-              ...(location.pathname === item.path ? styles.active : {}),
-            }}
-          >
-            <img src={item.icon} alt={item.alt} width={24} height={24} />
-          </Link>
-        ))}
+            return (
+                <Link
+                    key={item.path}
+                    to={item.path}
+                    style={linkStyle}
+                    title={item.alt}
+                >
+                    <IconComponent 
+                        size={24} 
+                        style={styles.lucideIcon(isActive)}
+                    />
+                </Link>
+            );
+        })}
       </div>
 
       {/* Logout Button at bottom */}
-      <div style={styles.logout} onClick={handleLogout}>
-        <img
-          src="https://cdn-icons-png.flaticon.com/512/1828/1828479.png"
-          alt="Logout"
-          style={styles.logoutIcon}
+      <div style={styles.logout} onClick={handleLogout} title="Logout">
+        <Power
+          size={24}
+          style={styles.logoutIconStyle}
         />
       </div>
     </div>

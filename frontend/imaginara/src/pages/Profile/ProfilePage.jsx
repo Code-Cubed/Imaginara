@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Trash2, Heart, MessageCircle, Eye, Edit, X } from "lucide-react";
 import { io } from "socket.io-client";
-import LeftBar from "../../components/leftBar/LeftBar";
+import FollowersModal from "../Followers/FollowersModal";
 import "./ProfilePage.css";
 
-const ProfilePage = ({ onLogout }) => {
+const ProfilePage = () => { 
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("uploads");
   const [profile, setProfile] = useState(null);
@@ -13,15 +13,17 @@ const ProfilePage = ({ onLogout }) => {
   const [bookmarks, setBookmarks] = useState([]);
   const [likes, setLikes] = useState([]);
   const [comments, setComments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Keep global loading state
   const [error, setError] = useState("");
   const [socket, setSocket] = useState(null);
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editedCommentText, setEditedCommentText] = useState('');
   const [newAvatar, setNewAvatar] = useState(null);
-const [name, setName] = useState('');
-const [bio, setBio] = useState('');
-
+  const [name, setName] = useState('');
+  // Removed [bio, setBio] state
+  
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [modalType, setModalType] = useState('followers'); 
 
   // Get userId from token
   const getUserIdFromToken = () => {
@@ -37,89 +39,43 @@ const [bio, setBio] = useState('');
 
   const userId = getUserIdFromToken();
 
-  useEffect(() => {
-    if (!userId) {
-      navigate("/login");
-      return;
-    }
-
-    // Initialize socket connection
-    const newSocket = io("http://localhost:8000");
-    setSocket(newSocket);
-
-    // Join user's personal room
-    newSocket.emit("join-user", userId);
-
-    // Listen for real-time updates
-    newSocket.on("artwork-uploaded", (data) => {
-      if (data.userId === userId) {
-        fetchUploads();
-      }
-    });
-
-    newSocket.on("bookmark-updated", (data) => {
-      if (data.userId === userId) {
-        fetchBookmarks();
-      }
-    });
-
-    return () => {
-      newSocket.emit("leave-user", userId);
-      newSocket.close();
-    };
-  }, [userId]);
-
-  useEffect(() => {
-    if (userId) {
-      fetchProfile();
-      fetchUploads();
-      fetchBookmarks();
-      fetchLikes();
-      fetchComments();
-    }
-  }, [userId]);
-useEffect(() => {
-  if (profile?.user) {
-    setName(profile.user.name || '');
-    setBio(profile.user.bio || '');
-  }
-}, [profile]);
+  // -------------------------------------------------------------------
+  // Core Data Fetching Functions
+  // -------------------------------------------------------------------
 
   const fetchProfile = async () => {
-  try {
-    const response = await fetch(`http://localhost:8000/api/users/${userId}/profile`);
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Failed to fetch profile");
-    setProfile(data);
+    try {
+      const response = await fetch(`http://localhost:8000/api/users/${userId}/profile`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Failed to fetch profile");
+      setProfile(data);
 
-    // ✅ Save user with avatar in localStorage for TopBar
-    if (data.user) {
-      localStorage.setItem("user", JSON.stringify(data.user));
+      if (data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+        setName(data.user.name || ''); // Set name here
+        // setBio(data.user.bio || ''); // Removed bio
+      }
+      return data; // Return data for sequential loading
+    } catch (err) {
+      setError(err.message);
+      return null;
     }
-  } catch (err) {
-    setError(err.message);
-  }
-};
-
+  };
 
   const fetchUploads = async () => {
     try {
-      setLoading(true);
       const response = await fetch(`http://localhost:8000/api/users/${userId}/uploads`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Failed to fetch uploads");
       setUploads(data.artworks || []);
-      setError("");
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      console.error('Failed to fetch uploads:', err);
+      // Don't set global error, just log for sub-data fetch failures
     }
   };
 
   const fetchBookmarks = async () => {
     try {
-      setLoading(true);
       const token = localStorage.getItem("token");
       const response = await fetch(`http://localhost:8000/api/users/${userId}/bookmarks`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -127,42 +83,103 @@ useEffect(() => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Failed to fetch bookmarks");
       setBookmarks(data.artworks || []);
-      setError("");
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      console.error('Failed to fetch bookmarks:', err);
     }
   };
 
   const fetchLikes = async () => {
     try {
-      setLoading(true);
       const response = await fetch(`http://localhost:8000/api/users/${userId}/likes`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Failed to fetch likes");
       setLikes(data.artworks || []);
-      setError("");
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      console.error('Failed to fetch likes:', err);
     }
   };
 
   const fetchComments = async () => {
     try {
-      setLoading(true);
       const response = await fetch(`http://localhost:8000/api/users/${userId}/comments`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Failed to fetch comments");
       setComments(data.comments || []);
-      setError("");
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      console.error('Failed to fetch comments:', err);
     }
+  };
+
+  // -------------------------------------------------------------------
+  // Effects
+  // -------------------------------------------------------------------
+
+  // Socket Setup
+  useEffect(() => {
+    if (!userId) {
+      navigate("/login");
+      return;
+    }
+
+    const newSocket = io("http://localhost:8000");
+    setSocket(newSocket);
+    newSocket.emit("join-user", userId);
+
+    newSocket.on("artwork-uploaded", (data) => {
+      if (data.userId === userId) fetchUploads();
+    });
+
+    newSocket.on("bookmark-updated", (data) => {
+      if (data.userId === userId) fetchBookmarks();
+    });
+
+    newSocket.on(`user:${userId}:new-follower`, (data) => {
+      fetchProfile();
+    });
+
+    newSocket.on(`user:${userId}:follower-removed`, (data) => {
+      fetchProfile();
+    });
+
+    return () => {
+      newSocket.emit("leave-user", userId);
+      newSocket.close();
+    };
+  }, [userId, navigate]);
+
+  // Initial Data Load (FIXED LOADING ISSUE)
+  useEffect(() => {
+    const loadAllData = async () => {
+      if (!userId) return;
+
+      setLoading(true);
+      setError("");
+
+      await fetchProfile(); // Wait for profile data first
+
+      // Fetch all tab data concurrently after profile is loaded
+      await Promise.all([
+        fetchUploads(),
+        fetchBookmarks(),
+        fetchLikes(),
+        fetchComments(),
+      ]);
+
+      setLoading(false);
+    };
+
+    loadAllData();
+  }, [userId]);
+
+
+  // -------------------------------------------------------------------
+  // Handlers (Reduced for brevity, only showing updated ones)
+  // -------------------------------------------------------------------
+
+  // ✅ NEW: Open followers/following modal
+  const openFollowersModal = (type) => {
+    setModalType(type);
+    setShowFollowersModal(true);
   };
 
   const startEdit = (comment) => {
@@ -230,8 +247,9 @@ useEffect(() => {
       alert(err.message);
     }
   };
-
+  
   const handleDeleteAccount = async () => {
+    // ... (unchanged)
     const confirmed = window.confirm(
       "⚠️ WARNING: This will permanently delete your account and ALL associated data including artworks, comments, and bookmarks. This action cannot be undone. Are you sure?"
     );
@@ -259,54 +277,57 @@ useEffect(() => {
       alert(err.message);
     }
   };
- const handleAvatarChange = (e) => {
-  const file = e.target.files[0];
-  if (file) setNewAvatar(file);
-};
 
-const handleUpdateProfile = async () => {
-  const token = localStorage.getItem("token");
-  const formData = new FormData();
-  formData.append("name", name);
-  if (newAvatar) formData.append("avatar", newAvatar);
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) setNewAvatar(file);
+  };
 
-  try {
-    const response = await fetch("http://localhost:8000/api/users/update", {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
+  const handleUpdateProfile = async () => {
+    const token = localStorage.getItem("token");
+    const formData = new FormData();
+    formData.append("name", name);
+    // Removed formData.append("bio", bio); 
+    if (newAvatar) formData.append("avatar", newAvatar);
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Failed to update profile");
+    try {
+      const response = await fetch("http://localhost:8000/api/users/update", {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
 
-    setProfile((prev) => ({ ...prev, user: data.user }));
-    localStorage.setItem("user", JSON.stringify(data.user));
-    alert("Profile updated successfully!");
-  } catch (err) {
-    alert(err.message);
-  }
-};
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Failed to update profile");
 
-const handleRemoveAvatar = async () => {
-  const token = localStorage.getItem("token");
+      setProfile((prev) => ({ ...prev, user: data.user }));
+      localStorage.setItem("user", JSON.stringify(data.user));
+      alert("Profile updated successfully!");
+    } catch (err) {
+      alert(err.message);
+    }
+  };
 
-  try {
-    const response = await fetch("http://localhost:8000/api/users/remove-avatar", {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+  const handleRemoveAvatar = async () => {
+    // ... (unchanged)
+    const token = localStorage.getItem("token");
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Failed to remove avatar");
+    try {
+      const response = await fetch("http://localhost:8000/api/users/remove-avatar", {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    setProfile((prev) => ({ ...prev, user: data.user }));
-    localStorage.setItem("user", JSON.stringify(data.user));
-    alert("Avatar removed successfully!");
-  } catch (err) {
-    alert(err.message);
-  }
-};
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Failed to remove avatar");
+
+      setProfile((prev) => ({ ...prev, user: data.user }));
+      localStorage.setItem("user", JSON.stringify(data.user));
+      alert("Avatar removed successfully!");
+    } catch (err) {
+      alert(err.message);
+    }
+  };
 
   const handleArtworkClick = (artworkId) => {
     navigate(`/artwork/${artworkId}`);
@@ -323,12 +344,16 @@ const handleRemoveAvatar = async () => {
 
       if (!response.ok) throw new Error("Failed to remove bookmark");
 
-      // Remove from local state
       setBookmarks(bookmarks.filter((b) => b._id !== artworkId));
     } catch (err) {
       alert(err.message);
     }
   };
+
+
+  // -------------------------------------------------------------------
+  // Render Functions
+  // -------------------------------------------------------------------
 
   const renderArtworkCard = (artwork, showRemoveBookmark = false) => (
     <div
@@ -387,15 +412,8 @@ const handleRemoveAvatar = async () => {
   );
 
   const renderContent = () => {
-    if (loading) {
-      return (
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Loading...</p>
-        </div>
-      );
-    }
-
+    // Removed loading check here, relying on global check before main return
+    
     if (error) {
       return <div className="alert alert-error">{error}</div>;
     }
@@ -540,14 +558,18 @@ const handleRemoveAvatar = async () => {
     }
   };
 
-  if (!profile) {
+  // -------------------------------------------------------------------
+  // Main Component Return
+  // -------------------------------------------------------------------
+
+  if (loading || !profile) {
     return (
+      // Show loading spinner while fetching initial data
       <div className="flex min-h-screen bg-gray-100">
-        <LeftBar onLogout={onLogout} />
         <div className="flex-1 p-6">
           <div className="loading-container">
             <div className="loading-spinner"></div>
-            <p>Loading profile...</p>
+            <p>Loading profile and data...</p>
           </div>
         </div>
       </div>
@@ -556,62 +578,70 @@ const handleRemoveAvatar = async () => {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      
-
       <main className="flex-1 p-4 sm:p-6">
         <div className="max-w-6xl mx-auto">
           {/* Profile Header */}
-          <div className="profile-header"> <div className="profile-avatar"> 
-            {profile.user?.avatar ? 
-          ( <img src={profile.user.avatar} alt={profile.user.name} /> ) : ( <User size={48} /> )} 
+          <div className="profile-header">
+            <div className="profile-avatar">
+              {profile.user?.avatar ? (
+                <img src={profile.user.avatar} alt={profile.user.name} />
+              ) : (
+                <User size={48} />
+              )}
 
-   {/* Top-right corner stacked actions */}
-<div className="avatar-actions-top">
-  <label className="btn btn-outline">
-    <span className="btn-icon">✏️</span> Change
-    <input type="file" accept="image/*" onChange={handleAvatarChange} hidden />
-  </label>
-  <button onClick={handleRemoveAvatar} className="btn btn-danger">
-    <span className="btn-icon">🗑️</span> Remove
-  </button>
-  <button onClick={handleUpdateProfile} className="btn btn-primary">
-    <span className="btn-icon">💾</span> Save
-  </button>
-</div>
+              {/* Top-right corner stacked actions */}
+              <div className="avatar-actions-top">
+                <label className="btn btn-outline">
+                  <span className="btn-icon">✏️</span> Change
+                  <input type="file" accept="image/*" onChange={handleAvatarChange} hidden />
+                </label>
+                {profile.user?.avatar && (
+                  <button onClick={handleRemoveAvatar} className="btn btn-danger">
+                    <span className="btn-icon">🗑️</span> Remove
+                  </button>
+                )}
+                
+                <button onClick={handleUpdateProfile} className="btn btn-primary">
+                  <span className="btn-icon">💾</span> Save
+                </button>
+              </div>
+            </div>
 
+            <div className="profile-info">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="input input-bordered w-full max-w-xs mb-4"
+                placeholder="Your Name"
+              />
+              {/* Removed Bio textarea here */}
 
-  </div>
-
-  <div className="profile-info">
-    <input
-      type="text"
-      value={name}
-      onChange={(e) => setName(e.target.value)}
-      className="input input-bordered w-full max-w-xs"
-      placeholder="Your Name"
-    />
-    
-
-   
-
-    {/* Stats */}
-    <div className="profile-stats mt-4">
-      <div className="stat-item">
-        <span className="stat-value">{profile.stats?.uploads || 0}</span>
-        <span className="stat-label">Uploads</span>
-      </div>
-      <div className="stat-item">
-        <span className="stat-value">{profile.stats?.followers || 0}</span>
-        <span className="stat-label">Followers</span>
-      </div>
-      <div className="stat-item">
-        <span className="stat-value">{profile.stats?.following || 0}</span>
-        <span className="stat-label">Following</span>
-      </div>
-    </div>
-  </div>
-</div>
-
+              {/* Stats - now clickable */}
+              <div className="profile-stats mt-4">
+                <div className="stat-item">
+                  <span className="stat-value">{profile.stats?.uploads || 0}</span>
+                  <span className="stat-label">Uploads</span>
+                </div>
+                <div 
+                  className="stat-item stat-clickable" 
+                  onClick={() => openFollowersModal('followers')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <span className="stat-value">{profile.stats?.followers || 0}</span>
+                  <span className="stat-label">Followers</span>
+                </div>
+                <div 
+                  className="stat-item stat-clickable" 
+                  onClick={() => openFollowersModal('following')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <span className="stat-value">{profile.stats?.following || 0}</span>
+                  <span className="stat-label">Following</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Tabs */}
           <div className="profile-tabs">
@@ -658,6 +688,16 @@ const handleRemoveAvatar = async () => {
           </div>
         </div>
       </main>
+
+      {/* Followers/Following Modal */}
+     <FollowersModal
+  isOpen={showFollowersModal}
+  onClose={() => setShowFollowersModal(false)}
+  userId={userId}
+  type={modalType}
+  currentUserId={userId}
+  onUpdateCounts={fetchProfile} // <<< ADD THIS PROP
+/>
     </div>
   );
 };

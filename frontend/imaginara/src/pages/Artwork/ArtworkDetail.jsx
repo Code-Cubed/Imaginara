@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
-// Imported Trash2 for the delete button, and Edit/X for editing
-import { Bookmark, BookmarkCheck, Trash2, Edit, X } from 'lucide-react'; 
-import LeftBar from '../../components/leftBar/LeftBar';
+// Imported Icons
+import { Bookmark, BookmarkCheck, Trash2, Edit, X, UserPlus, UserCheck } from 'lucide-react'; 
+// NOTE: Removed LeftBar import
+// import LeftBar from '../../components/leftBar/LeftBar'; 
 import './ArtworkDetail.css';
 import TopBar from '../../components/topBar/topBar';
 
@@ -19,9 +20,12 @@ const ArtworkDetail = ({ onLogout }) => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   
-  // NEW: State for comment editing
+  // State for comment editing
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editedCommentText, setEditedCommentText] = useState('');
+  
+  // State for follow status
+  const [isFollowing, setIsFollowing] = useState(false);
 
 
   // Get current user ID from token
@@ -38,6 +42,64 @@ const ArtworkDetail = ({ onLogout }) => {
   };
 
   const currentUserId = getUserIdFromToken();
+  
+  // Check Follow Status function
+  const checkFollowStatus = async (creatorId) => {
+    // Only check if logged in and not checking self
+    if (!currentUserId || !creatorId || currentUserId === creatorId) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8000/api/follow/check/${creatorId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setIsFollowing(data.isFollowing);
+      }
+    } catch (err) {
+      console.error('Failed to check follow status:', err);
+    }
+  };
+
+  // Handle Follow/Unfollow function
+  const handleFollow = async () => {
+    if (!currentUserId) {
+      alert('Please login to follow artists');
+      navigate('/login');
+      return;
+    }
+
+    if (!artwork?.creator?._id) return; 
+
+    if (artwork.creator._id === currentUserId) {
+      alert('You cannot follow yourself');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8000/api/follow/${artwork.creator._id}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+
+      setIsFollowing(data.isFollowing);
+      
+      // Show success message
+      if (data.isFollowing) {
+        alert(`You are now following ${artwork.creator.name}`);
+      } else {
+        alert(`You unfollowed ${artwork.creator.name}`);
+      }
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
 
   useEffect(() => {
     const newSocket = io('http://localhost:8000');
@@ -57,14 +119,14 @@ const ArtworkDetail = ({ onLogout }) => {
       }
     });
     
-    // NEW: Handle real-time comment updates
+    // Handle real-time comment updates
     newSocket.on('comment-updated', (updatedComment) => {
         setComments(prevComments => prevComments.map(c => 
             c._id === updatedComment._id ? updatedComment : c
         ));
     });
 
-    // NEW: Handle real-time comment deletion
+    // Handle real-time comment deletion
     newSocket.on('comment-deleted', ({ commentId, artworkId }) => {
         setComments(prevComments => prevComments.filter(c => c._id !== commentId));
         setArtwork(prev => prev ? { ...prev, commentsCount: prev.commentsCount - 1 } : prev);
@@ -91,6 +153,7 @@ const ArtworkDetail = ({ onLogout }) => {
     };
   }, [id, currentUserId]);
 
+  // Initial data fetch useEffect
   useEffect(() => {
     let isMounted = true;
     
@@ -119,6 +182,15 @@ const ArtworkDetail = ({ onLogout }) => {
       isMounted = false;
     };
   }, [id]);
+  
+  // useEffect to handle follow status check when artwork or creator changes
+  useEffect(() => {
+    // Check follow status only if artwork and its creator are loaded
+    if (artwork?.creator?._id) {
+        checkFollowStatus(artwork.creator._id);
+    }
+  }, [artwork?.creator?._id, currentUserId]); 
+
 
   const trackView = async () => {
     try {
@@ -196,7 +268,6 @@ const ArtworkDetail = ({ onLogout }) => {
   };
 
   const handleLike = async () => {
-    // ... (handleLike implementation)
     if (!currentUserId) {
       alert('Please login to like artworks');
       navigate('/login');
@@ -234,7 +305,6 @@ const ArtworkDetail = ({ onLogout }) => {
   };
 
   const handleBookmark = async () => {
-    // ... (handleBookmark implementation)
     if (!currentUserId) {
       alert('Please login to bookmark artworks');
       navigate('/login');
@@ -271,7 +341,6 @@ const ArtworkDetail = ({ onLogout }) => {
   };
 
   const handleCommentSubmit = async (e) => {
-    // ... (handleCommentSubmit implementation)
     e.preventDefault();
     
     if (!currentUserId) {
@@ -301,13 +370,11 @@ const ArtworkDetail = ({ onLogout }) => {
         throw new Error(data.message || 'Failed to post comment');
       }
 
-      // Socket handles notifying other users, but we update our own state immediately
       if (socket) {
         socket.emit('comment-added', { artworkId: id, comment: data });
       }
 
       setComment('');
-      // Prepend new comment to the list
       setComments([data, ...comments]);
       setArtwork((prev) => ({
         ...prev,
@@ -319,7 +386,6 @@ const ArtworkDetail = ({ onLogout }) => {
   };
 
   const handleDeleteArtwork = async () => {
-    // ... (handleDeleteArtwork implementation)
     if (!window.confirm('Are you absolutely sure you want to delete this artwork? This action is permanent and cannot be undone.')) {
       return;
     }
@@ -344,8 +410,6 @@ const ArtworkDetail = ({ onLogout }) => {
       alert(`Error: ${err.message}`);
     }
   };
-  
-  // NEW: Comment Edit/Delete Functions
   
   const startEdit = (comment) => {
       setEditingCommentId(comment._id);
@@ -377,14 +441,11 @@ const ArtworkDetail = ({ onLogout }) => {
               throw new Error(updatedComment.message || 'Failed to edit comment');
           }
 
-          // Update local state and reflect in UI
           setComments(prev => prev.map(c => 
               c._id === commentId ? updatedComment : c
           ));
 
-          // Notify others via socket
           if (socket) {
-              // Assuming the socket setup handles broadcasting to the artwork room
               socket.emit('comment-updated', updatedComment); 
           }
 
@@ -412,11 +473,9 @@ const ArtworkDetail = ({ onLogout }) => {
               throw new Error(data.message || 'Failed to delete comment.');
           }
 
-          // Update local state (remove comment and decrement count)
           setComments(prev => prev.filter(c => c._id !== commentId));
           setArtwork(prev => prev ? { ...prev, commentsCount: prev.commentsCount - 1 } : prev);
 
-          // Notify others via socket
           if (socket) {
               socket.emit('comment-deleted', { commentId, artworkId: id });
           }
@@ -430,7 +489,7 @@ const ArtworkDetail = ({ onLogout }) => {
   if (loading) {
     return (
       <div className="page-container">
-        <LeftBar onLogout={onLogout} />
+        {/* Removed LeftBar */}
         <div className="main-content">
           <TopBar/>
           <div className="loading-container">
@@ -445,7 +504,7 @@ const ArtworkDetail = ({ onLogout }) => {
   if (error || !artwork) {
     return (
       <div className="page-container">
-        <LeftBar onLogout={onLogout} />
+        {/* Removed LeftBar */}
         <div className="main-content">
           <TopBar/>
           <div className="error-container">
@@ -464,10 +523,9 @@ const ArtworkDetail = ({ onLogout }) => {
   const isCreator = artwork && artwork.creator && artwork.creator._id === currentUserId;
 
   return (
-    <div className="page-container">
-
-      
-      <div className="main-content">
+    <div className="page-container no-leftbar">
+      {/* Removed LeftBar */}
+      <div className="main-content full-width">
         <TopBar />
         <div className="detail-container">
           <button onClick={() => navigate('/home')} className="back-button">
@@ -528,23 +586,87 @@ const ArtworkDetail = ({ onLogout }) => {
               )}
 
 
-              <div className="creator-info">
-                <div className="creator-avatar">
-                  {artwork.creator?.avatar ? (
-                    <img src={artwork.creator.avatar} alt={artwork.creator.name} />
-                  ) : (
-                    <div className="avatar-placeholder">
-                      {artwork.creator?.name?.charAt(0) || 'U'}
+              {/* Creator Info and Follow Button Logic */}
+              {artwork.creator && (
+                currentUserId !== artwork.creator._id ? (
+                  // Case 1: Viewing another artist's work -> Show Follow button
+                  <div className="artwork-creator-follow">
+                    <div className="creator-info-inline">
+                      <div className="creator-avatar-small">
+                        {artwork.creator.avatar ? (
+                          <img src={artwork.creator.avatar} alt={artwork.creator.name} />
+                        ) : (
+                          <div className="avatar-placeholder">
+                            {artwork.creator.name?.charAt(0) || 'U'}
+                          </div>
+                        )}
+                      </div>
+                      <span 
+                        className="creator-name-link"
+                        onClick={() => navigate(`/user/${artwork.creator._id}`)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {artwork.creator.name}
+                      </span>
                     </div>
-                  )}
+                    {/* FOLLOW BUTTON */}
+                    <button
+                      onClick={handleFollow}
+                      className={`btn-follow-artist ${isFollowing ? 'following' : ''}`}
+                    >
+                      {isFollowing ? (
+                        <>
+                          <UserCheck size={16} /> Following
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus size={16} /> Follow
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  // Case 2: Viewing your own work -> Show simple creator info
+                  <div className="creator-info">
+                    <div className="creator-avatar">
+                      {artwork.creator?.avatar ? (
+                        <img src={artwork.creator.avatar} alt={artwork.creator.name} />
+                      ) : (
+                        <div className="avatar-placeholder">
+                          {artwork.creator?.name?.charAt(0) || 'U'}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="creator-name">{artwork.creator?.name || 'Unknown Artist'}</p>
+                      <p className="upload-date">
+                        {new Date(artwork.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                )
+              )}
+              {/* Fallback for logged-out users (no currentUserId) viewing a work */}
+              {!currentUserId && artwork.creator && (
+                <div className="creator-info">
+                  <div className="creator-avatar">
+                    {artwork.creator?.avatar ? (
+                      <img src={artwork.creator.avatar} alt={artwork.creator.name} />
+                    ) : (
+                      <div className="avatar-placeholder">
+                        {artwork.creator?.name?.charAt(0) || 'U'}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="creator-name">{artwork.creator?.name || 'Unknown Artist'}</p>
+                    <p className="upload-date">
+                      {new Date(artwork.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="creator-name">{artwork.creator?.name || 'Unknown Artist'}</p>
-                  <p className="upload-date">
-                    {new Date(artwork.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
+              )}
+
 
               {artwork.description && (
                 <div className="description-section">
@@ -691,7 +813,7 @@ const ArtworkDetail = ({ onLogout }) => {
               </div>
             </div>
           </div>
-        </div>
+        </div> 
       </div>
     </div>
   );

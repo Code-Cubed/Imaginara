@@ -218,3 +218,140 @@ exports.removeAvatar = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+
+exports.discoverUsers = async (req, res) => {
+  try {
+    const currentUserId = req.user._id;
+    const { limit = 20 } = req.query;
+
+    // Get current user's following list
+    const currentUser = await User.findById(currentUserId).select('following');
+    const followingIds = currentUser.following.map(id => id.toString());
+
+    // Find users that current user is NOT following (excluding self)
+    const users = await User.find({
+      _id: { 
+        $nin: [...followingIds, currentUserId] 
+      }
+    })
+    .select('name email avatar bio followers')
+    .limit(parseInt(limit))
+    .lean();
+
+    // Add additional info for each user
+    const usersWithInfo = await Promise.all(
+      users.map(async (user) => {
+        const uploadsCount = await Artwork.countDocuments({ 
+          creator: user._id, 
+          flagged: false 
+        });
+
+        return {
+          ...user,
+          followersCount: user.followers.length,
+          uploadsCount,
+          isFollowing: false
+        };
+      })
+    );
+
+    // Sort by follower count (most popular first)
+    usersWithInfo.sort((a, b) => b.followersCount - a.followersCount);
+
+    res.json({ users: usersWithInfo });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Search users by name or email
+exports.searchUsers = async (req, res) => {
+  try {
+    const currentUserId = req.user._id;
+    const { q, limit = 20 } = req.query;
+
+    if (!q || q.trim().length < 2) {
+      return res.status(400).json({ 
+        message: 'Search query must be at least 2 characters' 
+      });
+    }
+
+    // Get current user's following list
+    const currentUser = await User.findById(currentUserId).select('following');
+    const followingIds = currentUser.following.map(id => id.toString());
+
+    // Search users by name or email (case-insensitive)
+    const users = await User.find({
+      _id: { $ne: currentUserId }, // Exclude current user
+      $or: [
+        { name: { $regex: q, $options: 'i' } },
+        { email: { $regex: q, $options: 'i' } }
+      ]
+    })
+    .select('name email avatar bio followers')
+    .limit(parseInt(limit))
+    .lean();
+
+    // Add additional info for each user
+    const usersWithInfo = await Promise.all(
+      users.map(async (user) => {
+        const uploadsCount = await Artwork.countDocuments({ 
+          creator: user._id, 
+          flagged: false 
+        });
+
+        return {
+          ...user,
+          followersCount: user.followers.length,
+          uploadsCount,
+          isFollowing: followingIds.includes(user._id.toString())
+        };
+      })
+    );
+
+    res.json({ users: usersWithInfo });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Get popular users (most followed)
+exports.getPopularUsers = async (req, res) => {
+  try {
+    const { limit = 10 } = req.query;
+
+    const users = await User.aggregate([
+      {
+        $project: {
+          name: 1,
+          email: 1,
+          avatar: 1,
+          bio: 1,
+          followersCount: { $size: '$followers' }
+        }
+      },
+      {
+        $sort: { followersCount: -1 }
+      },
+      {
+        $limit: parseInt(limit)
+      }
+    ]);
+
+    // Add uploads count for each user
+    const usersWithUploads = await Promise.all(
+      users.map(async (user) => {
+        const uploadsCount = await Artwork.countDocuments({ 
+          creator: user._id, 
+          flagged: false 
+        });
+        return { ...user, uploadsCount };
+      })
+    );
+
+    res.json({ users: usersWithUploads });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

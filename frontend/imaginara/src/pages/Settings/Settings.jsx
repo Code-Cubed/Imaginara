@@ -16,23 +16,7 @@ const Settings = ({ onLogout }) => {
   const navigate = useNavigate();
   const { theme, setTheme } = useContext(ThemeContext);
 
-  const handleDeleteAccount = async () => {
-    if (!window.confirm("Are you sure? This cannot be undone.")) return;
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8000/api/auth/delete", {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        alert("Account deleted successfully");
-        onLogout();
-        navigate("/");
-      }
-    } catch {
-      alert("Failed to delete account");
-    }
-  };
+  
 
   return (
     <main className="flex-1 p-4 md:p-8 overflow-y-auto bg-base-200 min-h-screen">
@@ -57,9 +41,7 @@ const Settings = ({ onLogout }) => {
                 onChange={() => setTheme(theme === "dark" ? "light" : "dark")}
               />
             </label>
-            <button className="btn btn-error" onClick={handleDeleteAccount}>
-              Delete Account
-            </button>
+            
           </div>
         </div>
 

@@ -313,7 +313,7 @@
 }
 
 
-/* Responsive Adjustments */
+
 @media (max-width: 968px) {
   .artwork-detail {
     grid-template-columns: 1fr;
@@ -349,5 +349,111 @@
 
   .action-buttons {
     flex-direction: column;
+  }
+}
+
+
+.artwork-creator-follow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: 1px solid #dee2e6;
+}
+
+.creator-info-inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.creator-avatar-small {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+}
+
+.creator-avatar-small img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.creator-name-link {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #495057;
+  transition: color 0.2s;
+}
+
+.creator-name-link:hover {
+  color: #667eea;
+  text-decoration: underline;
+}
+
+.btn-follow-artist {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-follow-artist:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-follow-artist:active {
+  transform: translateY(0);
+}
+
+.btn-follow-artist.following {
+  background: white;
+  color: #6c757d;
+  border: 2px solid #dee2e6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-follow-artist.following:hover {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .artwork-creator-follow {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .creator-info-inline {
+    justify-content: center;
+  }
+
+  .btn-follow-artist {
+    width: 100%;
+    justify-content: center;
   }
 }
