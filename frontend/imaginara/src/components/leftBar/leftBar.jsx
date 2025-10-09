@@ -87,6 +87,7 @@ const LeftBar = ({ onLogout }) => {
     {path:"/analytics", lucideIcon: BarChart2, alt:"Analytics"},
     {path:"/similarity-search", lucideIcon: Sparkles, alt:"Similarity Search"},
     { path: "/chatbot", lucideIcon: Bot, alt: "AI ChatBot" },
+    {path:"/boards", lucideIcon: Users, alt:"Boards"},
     { path: "/settings", lucideIcon: Settings, alt: "Settings" },
   ];
 

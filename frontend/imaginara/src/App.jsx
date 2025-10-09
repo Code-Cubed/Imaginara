@@ -19,6 +19,7 @@ import ContactPage from './pages/Contact/ContactForm';
 import OAuthCallback from './pages/Auth/OAuthCallback';
 import AnalyticsDashboard from './pages/Analytics/AnalyticsDashboard';
 import SimilaritySearch from './pages/Similarity/SimilaritySearch';
+import BoardsPage from './pages/Boards/BoardsPage';
 function App() {
   return (
     <ThemeProvider>
@@ -71,7 +72,7 @@ function AppContent() {
           />
           <Route
             path="/signup"
-            element={isAuthenticated ? <Navigate to="/home" replace /> : <SignUp onRegister={handleLogin} />}
+            element={isAuthenticated ? <Navigate to="/home" replace /> : <SignUp onSignUp={handleLogin} />}
           />
            
           <Route path="/auth/callback" element={<OAuthCallback 
@@ -101,6 +102,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <ProtectedLayout onLogout={handleLogout}><ExplorePage /></ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/boards"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout onLogout={handleLogout}><BoardsPage /></ProtectedLayout>
               </ProtectedRoute>
             }
           />
