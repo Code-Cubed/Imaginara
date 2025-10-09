@@ -20,7 +20,7 @@ const similarityRoutes = require('./routes/similarity');
 
 // ✅ NEW — AI Tag Generator Route
 const aiRoute = require('./routes/aiRoute');
-
+const geminiRoute = require('./routes/geminiRoute');
 const app = express();
 require('./config/passport');
 
@@ -71,7 +71,7 @@ app.use('/api/similarity', similarityRoutes);
 
 // ✅ Add AI route
 app.use('/api/ai', aiRoute);
-
+app.use('/api/gemini', geminiRoute);
 // ======================
 // 🔹 Create HTTP Server + Socket.IO
 // ======================

@@ -1,13 +1,17 @@
-import React, { useState, useRef, useEffect } from "react";
-import LeftBar from "../../components/leftBar/LeftBar";
+// components/ChatBot/ChatBot.jsx
+import React, { useState, useRef, useEffect, useContext } from "react";
+import { ThemeContext } from "../../Context/ThemeContext";
+import LeftBar from "../leftBar/LeftBar";
+import "./ChatBot.css";
 
-const ChatBot = () => {
-  const [conversation, setConversation] = useState([]); // {role,text}
+const ChatBot = ({ onLogout }) => {
+  const { theme } = useContext(ThemeContext);
+  const [conversation, setConversation] = useState([]);
   const [userInput, setUserInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const chatRef = useRef(null);
 
-  // Scroll to bottom
+  // Scroll to bottom whenever conversation updates
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
@@ -19,91 +23,134 @@ const ChatBot = () => {
     const text = userInput.trim();
     if (!text) return;
 
+    // Add user message to conversation
     const updatedConversation = [...conversation, { role: "user", text }];
     setConversation(updatedConversation);
     setUserInput("");
     setIsLoading(true);
 
     try {
+      // The URL is correct: http://localhost:8000/api/gemini/chat
       const res = await fetch("http://localhost:8000/api/gemini/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ conversation: updatedConversation }),
       });
 
-      const data = await res.json();
-      const aiText = data.aiText || "⚠️ Something went wrong.";
+      if (!res.ok) {
+        // Throw an error with the status code for logging
+        throw new Error(`Server error: ${res.status}`);
+      }
 
+      const data = await res.json();
+      const aiText = data.aiText || "⚠️ No response from AI.";
+
+      // Add bot response
       setConversation([...updatedConversation, { role: "bot", text: aiText }]);
     } catch (err) {
-      console.error(err);
+      console.error("Chat error:", err);
+      // Enhanced error message to show the specific error (e.g., 404, 500)
       setConversation([
         ...updatedConversation,
-        { role: "bot", text: "⚠️ Error connecting to server." },
+        { role: "bot", text: `⚠️ Error connecting to AI. Please try again. (Details: ${err.message})` },
       ]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <LeftBar />
+  const clearChat = () => {
+    setConversation([]);
+  };
 
-      {/* Chat Section */}
-      <div className="flex-1 flex flex-col">
+  return (
+    <div className={`chatbot-container ${theme}`} data-theme={theme}>
+      <LeftBar onLogout={onLogout} />
+
+      <div className="chatbot-main">
         {/* Header */}
-        <div className="p-4 shadow-md bg-white flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-800">💬 Imaginara ChatBot</h1>
+        <div className="chatbot-header">
+          <div className="header-content">
+            <h1 className="header-title">
+              <span className="header-icon">💬</span>
+              Imaginara AI Assistant
+            </h1>
+            <p className="header-subtitle">
+              Ask me anything about art, creativity, or your artworks!
+            </p>
+          </div>
+          {conversation.length > 0 && (
+            <button onClick={clearChat} className="clear-btn">
+              Clear Chat
+            </button>
+          )}
         </div>
 
         {/* Messages */}
-        <div ref={chatRef} className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-100">
+        <div ref={chatRef} className="chatbot-messages">
           {conversation.length === 0 && (
-            <div className="text-center text-gray-500 mt-10">
-              👋 Hi! Ask me anything about art or creativity.
+            <div className="empty-state">
+              <div className="empty-icon">🎨</div>
+              <h3>Welcome to Imaginara AI!</h3>
+              <p>I'm here to help you with:</p>
+              <ul className="welcome-list">
+                <li>✨ Art techniques and tips</li>
+                <li>🎨 Creative inspiration</li>
+                <li>📚 Art history questions</li>
+                <li>💡 Project ideas</li>
+              </ul>
             </div>
           )}
 
           {conversation.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div
-                className={`max-w-[70%] rounded-2xl p-3 ${
-                  msg.role === "user"
-                    ? "bg-blue-600 text-white"
-                    : "bg-white shadow-sm text-gray-800"
-                }`}
-              >
-                {msg.text}
+            <div
+              key={i}
+              className={`message ${msg.role === "user" ? "user-message" : "bot-message"}`}
+            >
+              <div className="message-avatar">
+                {msg.role === "user" ? "👤" : "🤖"}
+              </div>
+              <div className="message-bubble">
+                <div className="message-text">{msg.text}</div>
               </div>
             </div>
           ))}
 
           {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-white shadow-sm text-gray-500 rounded-2xl p-3">Typing...</div>
+            <div className="message bot-message">
+              <div className="message-avatar">🤖</div>
+              <div className="message-bubble">
+                <div className="typing-indicator">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
             </div>
           )}
         </div>
 
         {/* Input */}
-        <form onSubmit={handleSend} className="p-4 bg-white border-t flex items-center gap-2">
-          <input
-            type="text"
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-1 p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
-            disabled={isLoading}
-          />
-          <button
-            type="submit"
-            disabled={isLoading || !userInput.trim()}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl transition"
-          >
-            Send
-          </button>
+        <form onSubmit={handleSend} className="chatbot-input-form">
+          <div className="input-wrapper">
+            <input
+              type="text"
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              placeholder="Type your message..."
+              className="chat-input"
+              disabled={isLoading}
+            />
+            <button
+              type="submit"
+              disabled={isLoading || !userInput.trim()}
+              className="send-btn"
+            >
+              {isLoading ? "..." : "Send"}
+            </button>
+          </div>
         </form>
       </div>
     </div>

@@ -1,58 +1,60 @@
+// Example: routes/gemini.js or similar
+
 const express = require("express");
-const fetch = require("node-fetch"); // ensure node-fetch v2
-require("dotenv").config();
+// ❌ No longer need 'node-fetch' since we'll use the official SDK
+const { GoogleGenAI } = require('@google/genai'); 
+require("dotenv").config(); 
 
 const router = express.Router();
 
+// Initialize the GoogleGenAI instance using the environment variable
+// This should be done once when the file loads
+const apiKey = process.env.GEMINI_API_KEY;
+if (!apiKey) {
+    console.error("CRITICAL: GEMINI_API_KEY is missing from backend .env file!");
+}
+const ai = new GoogleGenAI({ apiKey });
+
+
 /**
- * POST /api/gemini/chat
+ * POST /chat
+ * Receives the conversation history from the frontend and sends it to the Gemini API.
  * body: { conversation: [ { role: "user"|"bot", text: "..." }, ... ] }
  */
 router.post("/chat", async (req, res) => {
   try {
     const { conversation } = req.body;
 
-    // Validate input
     if (!conversation || !Array.isArray(conversation)) {
       return res.status(400).json({ error: "Invalid conversation format." });
     }
-
-    // Build prompt text
-    let promptText = "";
-    conversation.forEach((msg) => {
-      if (msg.role === "user") promptText += `User: ${msg.text}\n`;
-      else promptText += `AI: ${msg.text}\n`;
+    
+    // Convert the simplified frontend format ({role, text}) to the Gemini API format ({role, parts: [{text}]})
+    const geminiContents = conversation.map(msg => ({
+      // Gemini expects 'model' for the AI's role, not 'bot'
+      role: msg.role === 'user' ? 'user' : 'model', 
+      parts: [{ text: msg.text }]
+    }));
+    
+    // The last message (the one the user just sent) is the one to be generated from.
+    // The previous messages are the history.
+    
+    const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash", // Use the modern chat-optimized model
+        contents: geminiContents, // Pass the entire history
     });
-    promptText += "AI:"; // AI should respond next
-
-    // Gemini API endpoint
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/text-bison-001:generateText?key=${process.env.GEMINI_API_KEY}`;
-
-    // Call Gemini
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        prompt: { text: promptText },
-        temperature: 0.7,
-        maxOutputTokens: 300
-      }),
-    });
-
-    if (!response.ok) {
-      const err = await response.json();
-      return res.status(response.status).json({ error: err });
-    }
-
-    const data = await response.json();
 
     // Extract AI response
-    const aiText = data?.candidates?.[0]?.output || "Sorry, I couldn't process that.";
+    const aiText = response.text || "Sorry, I couldn't process that.";
 
     res.json({ aiText });
+
   } catch (err) {
-    console.error("Gemini API Error:", err);
-    res.status(500).json({ error: err.message });
+    console.error("Gemini API Error:", err.message);
+    res.status(500).json({ 
+        error: "Internal Server Error during AI request.", 
+        details: err.message 
+    });
   }
 });
 
