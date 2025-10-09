@@ -22,7 +22,7 @@ const collectionRoutes = require('./routes/collections');
 
 // ✅ NEW — AI Tag Generator Route
 const aiRoute = require('./routes/aiRoute');
-
+const geminiRoute = require('./routes/geminiRoute');
 const app = express();
 require('./config/passport');
 
@@ -75,7 +75,7 @@ app.use('/api/collections', collectionRoutes);
 
 // ✅ Add AI route
 app.use('/api/ai', aiRoute);
-
+app.use('/api/gemini', geminiRoute);
 // ======================
 // 🔹 Create HTTP Server + Socket.IO
 // ======================
