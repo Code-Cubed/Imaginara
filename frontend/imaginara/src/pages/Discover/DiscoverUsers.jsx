@@ -38,49 +38,26 @@ const DiscoverUsers = () => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
 
-      setUsers(data.users || []);
+      // Filter search if searchQuery exists
+      let filteredUsers = data.users || [];
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        filteredUsers = filteredUsers.filter(user =>
+          user.name.toLowerCase().includes(query) ||
+          user.email.toLowerCase().includes(query)
+        );
+      }
 
-      // Get follow status for each user
+      setUsers(filteredUsers);
+
+      // Follow status map
       const statusMap = {};
-      for (const user of data.users || []) {
+      for (const user of filteredUsers) {
         statusMap[user._id] = user.isFollowing || false;
       }
       setFollowingMap(statusMap);
     } catch (err) {
       console.error('Error fetching users:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) {
-      fetchSuggestedUsers();
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `http://localhost:8000/api/users/search?q=${encodeURIComponent(searchQuery)}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
-
-      setUsers(data.users || []);
-
-      // Update follow status map
-      const statusMap = {};
-      for (const user of data.users || []) {
-        statusMap[user._id] = user.isFollowing || false;
-      }
-      setFollowingMap(statusMap);
-    } catch (err) {
-      console.error('Error searching users:', err);
     } finally {
       setLoading(false);
     }
@@ -102,11 +79,8 @@ const DiscoverUsers = () => {
         [userId]: data.isFollowing
       }));
 
-      // Update user's follower count in the list
-      setUsers(prev => prev.map(user => 
-        user._id === userId 
-          ? { ...user, followersCount: data.followersCount }
-          : user
+      setUsers(prev => prev.map(user =>
+        user._id === userId ? { ...user, followersCount: data.followersCount } : user
       ));
     } catch (err) {
       alert(err.message);
@@ -135,8 +109,14 @@ const DiscoverUsers = () => {
         <p>Find and follow talented creators</p>
       </div>
 
-      {/* Search Bar */}
-      <form onSubmit={handleSearch} className="search-form">
+      {/* Modern Search Bar */}
+      <form
+        className="search-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          fetchSuggestedUsers();
+        }}
+      >
         <div className="search-input-wrapper">
           <Search size={20} className="search-icon" />
           <input
@@ -147,7 +127,7 @@ const DiscoverUsers = () => {
             className="search-input"
           />
         </div>
-        <button type="submit" className="btn btn-primary">
+        <button type="submit" className="search-button">
           Search
         </button>
       </form>
@@ -163,24 +143,18 @@ const DiscoverUsers = () => {
         ) : (
           users.map((user) => (
             <div key={user._id} className="user-card">
-              <div 
+              <div
                 className="user-card-content"
                 onClick={() => handleUserClick(user._id)}
                 style={{ cursor: 'pointer' }}
               >
                 <div className="user-card-avatar">
-                  {user.avatar ? (
-                    <img src={user.avatar} alt={user.name} />
-                  ) : (
-                    <User size={40} />
-                  )}
+                  {user.avatar ? <img src={user.avatar} alt={user.name} /> : <User size={40} />}
                 </div>
-
                 <div className="user-card-info">
                   <h3>{user.name}</h3>
                   <p className="user-email">{user.email}</p>
                   {user.bio && <p className="user-bio">{user.bio}</p>}
-                  
                   <div className="user-stats">
                     <span>{user.followersCount || 0} followers</span>
                     <span>•</span>
