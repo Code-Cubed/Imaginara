@@ -61,6 +61,7 @@ const ArtworkList = ({ onLogout }) => {
       {/* <LeftBar onLogout={onLogout} /> */}
 
       <div className="flex-1 flex flex-col">
+       
         <TopBar />
 
         <div className="gallery-container flex-1 p-4 sm:p-6 overflow-auto">

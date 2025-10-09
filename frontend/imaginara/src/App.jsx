@@ -1,21 +1,23 @@
-// src/App.jsx
-import React, { useState, useEffect, useContext } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import React, { useState, useEffect, useContext } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 import Landing from "./pages/Landing/Landing";
 import Login from "./pages/Auth/Login";
 import SignUp from "./pages/Auth/SignUp";
 import HomePage from "./pages/Artwork/ArtworkList";
 import ArtworkDetail from "./pages/Artwork/ArtworkDetail";
-import AddArtwork from "./pages/Artwork/AddArtwork";
+import AddArtwork from "./pages/Artwork/Addartwork";
 import ExplorePage from "./pages/Home/ExplorePage";
 import ProfilePage from "./pages/Profile/ProfilePage";
 import Settings from "./pages/Settings/Settings";
 import ChatAI from "./pages/Messages/ChatAi"; // ✅ AI Chat page
 
+import ForgotPassword from './pages/Auth/ForgetPassword';
+import ChatBot from './components/ChatBot/ChatBot'; 
 import ProtectedLayout from "./components/ProtectedLayout";
 import { ThemeProvider, ThemeContext } from "./Context/ThemeContext";
-
+import DiscoverUsers from './pages/Discover/DiscoverUsers';
+import OAuthCallback from './pages/Auth/OAuthCallback';
 function App() {
   return (
     <ThemeProvider>
@@ -25,7 +27,7 @@ function App() {
 }
 
 function AppContent() {
-  const { theme } = useContext(ThemeContext);
+  const { theme } = useContext(ThemeContext); // ✅ added missing import
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -39,6 +41,7 @@ function AppContent() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setIsAuthenticated(false);
   };
 
@@ -47,6 +50,10 @@ function AppContent() {
       <div className="flex items-center justify-center h-screen">Loading...</div>
     );
   }
+
+  // Protected route wrapper
+  const ProtectedRoute = ({ children }) =>
+    isAuthenticated ? children : <Navigate to="/landing" replace />;
 
   return (
     <div data-theme={theme} className="min-h-screen">
@@ -65,31 +72,75 @@ function AppContent() {
             path="/signup"
             element={isAuthenticated ? <Navigate to="/home" replace /> : <SignUp onRegister={handleLogin} />}
           />
-
+           <Route path="/auth/callback" element={<OAuthCallback 
+           onLogin={handleLogin} />} />
+          <Route
+          path="/forgot-password"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/home" replace />
+            ) : (
+              <ForgotPassword />
+            )
+          }
+        />
           {/* Protected Routes */}
           <Route
             path="/home"
-            element={isAuthenticated ? <ProtectedLayout onLogout={handleLogout}><HomePage /></ProtectedLayout> : <Navigate to="/login" replace />}
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout onLogout={handleLogout}><HomePage /></ProtectedLayout>
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/explore"
-            element={isAuthenticated ? <ProtectedLayout onLogout={handleLogout}><ExplorePage /></ProtectedLayout> : <Navigate to="/login" replace />}
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout onLogout={handleLogout}><ExplorePage /></ProtectedLayout>
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/profile"
-            element={isAuthenticated ? <ProtectedLayout onLogout={handleLogout}><ProfilePage /></ProtectedLayout> : <Navigate to="/login" replace />}
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout onLogout={handleLogout}><ProfilePage /></ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/chatbot"
+            element={
+              <ProtectedRoute>
+                <ChatBot onLogout={handleLogout} />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/addartwork"
-            element={isAuthenticated ? <ProtectedLayout onLogout={handleLogout}><AddArtwork /></ProtectedLayout> : <Navigate to="/login" replace />}
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout onLogout={handleLogout}><AddArtwork /></ProtectedLayout>
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/artwork/:id"
-            element={isAuthenticated ? <ProtectedLayout onLogout={handleLogout}><ArtworkDetail /></ProtectedLayout> : <Navigate to="/login" replace />}
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout onLogout={handleLogout}><ArtworkDetail /></ProtectedLayout>
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/settings"
-            element={isAuthenticated ? <ProtectedLayout onLogout={handleLogout}><Settings onLogout={handleLogout} /></ProtectedLayout> : <Navigate to="/login" replace />}
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout onLogout={handleLogout}><Settings onLogout={handleLogout} /></ProtectedLayout>
+              </ProtectedRoute>
+            }
           />
 
           {/* ✅ AI Chat Route */}
@@ -98,12 +149,23 @@ function AppContent() {
             element={isAuthenticated ? <ProtectedLayout onLogout={handleLogout}><ChatAI /></ProtectedLayout> : <Navigate to="/login" replace />}
           />
 
+          <Route
+              path="/discover"
+              element={
+                <ProtectedRoute>
+                  <ProtectedLayout onLogout={handleLogout}>
+                    <DiscoverUsers />
+                  </ProtectedLayout>
+                </ProtectedRoute>
+              }
+            />
           {/* Default & Catch-all */}
           <Route
             path="/"
             element={isAuthenticated ? <Navigate to="/home" replace /> : <Navigate to="/landing" replace />}
           />
           <Route path="*" element={<Navigate to="/" replace />} />
+
         </Routes>
       </Router>
     </div>
