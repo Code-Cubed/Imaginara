@@ -26,6 +26,14 @@ const SignUp = ({ onSignUp }) => {
     setLoading(true);
     setError("");
 
+    // Email validation
+      if (!validEmailRegex.test(form.email)) {
+        setError("Please enter a valid email (gmail.com, yahoo.com, outlook.com only).");
+        setLoading(false);
+        return;
+      }
+
+
     try {
       const formData = new FormData();
       formData.append("name", form.name);

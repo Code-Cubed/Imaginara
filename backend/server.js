@@ -12,6 +12,7 @@ const authRoutes = require('./routes/auth');
 const commentRoutes = require('./routes/comments');
 const userRoutes = require('./routes/users');
 const followRoutes = require('./routes/follow');
+const contactRoutes = require('./routes/contactRoutes');
 const { Server } = require('socket.io');
 const analyticsRoutes = require('./routes/analytics');
 const similarityRoutes = require('./routes/similarity');
@@ -40,6 +41,7 @@ app.use('/api/artworks', artworkRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/follow', followRoutes);
+app.use('/api/contact', contactRoutes); 
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/similarity', similarityRoutes);
 // Create HTTP server
