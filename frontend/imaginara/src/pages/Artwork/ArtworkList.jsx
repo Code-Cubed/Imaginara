@@ -13,8 +13,11 @@ const ArtworkList = ({ onLogout }) => {
   const [filters, setFilters] = useState({
     search: '',
     category: '',
+    tags: '',
     sort: 'recent',
   });
+
+  const [searchTags, setSearchTags] = useState("");
 
   const categories = [
     'All', 'Art', 'Photography', 'Writing', 'Performance',
@@ -33,6 +36,7 @@ const ArtworkList = ({ onLogout }) => {
       if (filters.search) params.append('q', filters.search);
       if (filters.category && filters.category !== 'All') params.append('category', filters.category);
       if (filters.sort === 'popular') params.append('sort', 'popular');
+      if (filters.tags) params.append('tags', filters.tags);
 
       const response = await fetch(`http://localhost:8000/api/artworks?${params.toString()}`);
       const data = await response.json();
@@ -51,6 +55,10 @@ const ArtworkList = ({ onLogout }) => {
   const handleCategoryChange = (category) => setFilters({ ...filters, category });
   const handleSortChange = (sort) => setFilters({ ...filters, sort });
   const handleArtworkClick = (artworkId) => navigate(`/artwork/${artworkId}`);
+  const handleSearchByTags = (e) => {
+    setSearchTags(e.target.value);
+    setFilters({ ...filters, tags: e.target.value });
+  }
 
   const {theme} = useContext(ThemeContext);
 
@@ -89,6 +97,14 @@ const ArtworkList = ({ onLogout }) => {
               <option value="recent">Most Recent</option>
               <option value="popular">Most Popular</option>
             </select>
+
+            <input
+              type="text"
+              placeholder="Tags..."
+              value={searchTags}
+              onChange={handleSearchByTags}
+              className="search-input flex-[0.1] min-w-[40px]"
+            />
           </div>
 
           {/* Categories */}
