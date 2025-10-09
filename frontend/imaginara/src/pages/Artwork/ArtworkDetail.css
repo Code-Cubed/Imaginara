@@ -1,9 +1,12 @@
+
+
 .detail-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 16px;
 }
 
+/*  Back Button  */
 .back-button {
   display: inline-flex;
   align-items: center;
@@ -23,6 +26,7 @@
   transform: translateX(-4px);
 }
 
+/* Artwork Detail Layout */
 .artwork-detail {
   display: grid;
   grid-template-columns: 1.5fr 1fr;
@@ -33,6 +37,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+/*  Media Section  */
 .media-section {
   width: 100%;
 }
@@ -67,6 +72,7 @@
   margin-top: 24px;
 }
 
+/*  Info Section  */
 .info-section {
   display: flex;
   flex-direction: column;
@@ -97,6 +103,7 @@
   white-space: nowrap;
 }
 
+/*  Creator Section  */
 .creator-info {
   display: flex;
   align-items: center;
@@ -142,6 +149,7 @@
   color: #666;
 }
 
+/*  Description & Tags  */
 .description-section,
 .tags-section {
   padding-bottom: 24px;
@@ -178,6 +186,7 @@
   font-weight: 500;
 }
 
+/*  Stats Section  */
 .stats-section {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -209,6 +218,7 @@
   color: #666;
 }
 
+/*  Action Buttons  */
 .action-buttons {
   display: flex;
   gap: 12px;
@@ -240,6 +250,7 @@
   color: #9c27b0;
 }
 
+/*  Comments  */
 .comments-section {
   padding-top: 24px;
   border-top: 1px solid #e0e0e0;
@@ -267,6 +278,7 @@
   box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.1);
 }
 
+/*  Error */
 .error-container {
   text-align: center;
   padding: 80px 20px;
@@ -283,23 +295,23 @@
   color: #666;
   margin-bottom: 24px;
 }
-/* Comment avatar container */
+
+/*  Comment Avatars  */
 .comment-avatar {
-  width: 36px; /* smaller than creator avatar */
+  width: 36px;
   height: 36px;
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
 }
 
-/* Comment avatar image */
 .comment-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* Placeholder for users without avatar */
+
 .comment-avatar .avatar-placeholder {
   width: 100%;
   height: 100%;
@@ -310,46 +322,6 @@
   justify-content: center;
   font-size: 16px;
   font-weight: bold;
-}
-
-
-
-@media (max-width: 968px) {
-  .artwork-detail {
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
-
-  .detail-title {
-    font-size: 24px;
-  }
-
-  .artwork-header {
-    flex-direction: column;
-  }
-
-  .detail-category {
-    align-self: flex-start;
-  }
-}
-
-@media (max-width: 768px) {
-  .detail-container {
-    padding: 0 12px;
-  }
-
-  .artwork-detail {
-    padding: 24px;
-  }
-
-  .stats-section {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-  }
-
-  .action-buttons {
-    flex-direction: column;
-  }
 }
 
 
@@ -422,10 +394,6 @@
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
-.btn-follow-artist:active {
-  transform: translateY(0);
-}
-
 .btn-follow-artist.following {
   background: white;
   color: #6c757d;
@@ -437,25 +405,6 @@
   background: #f8f9fa;
   border-color: #adb5bd;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* Responsive Design */
-@media (max-width: 640px) {
-  .artwork-creator-follow {
-    flex-direction: column;
-    gap: 12px;
-    align-items: stretch;
-  }
-
-  .creator-info-inline {
-    justify-content: center;
-  }
-
-  .btn-follow-artist {
-    width: 100%;
-    justify-content: center;
-  }
 }
 
 
@@ -551,5 +500,76 @@
 .similar-artwork-creator {
   font-size: 0.8rem;
   color: #6b7280;
-  margin: 0;
+}
+
+
+
+/* Tablets (≤1024px) */
+@media (max-width: 1024px) {
+  .artwork-detail {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .detail-title {
+    font-size: 24px;
+  }
+  .audio-player, .document-viewer {
+    min-height: 320px;
+    padding: 24px;
+  }
+}
+
+/* Mobile (≤768px) */
+@media (max-width: 768px) {
+  .detail-container {
+    padding: 0 12px;
+  }
+  .artwork-detail {
+    padding: 24px;
+  }
+  .artwork-header {
+    flex-direction: column;
+  }
+  .detail-category {
+    align-self: flex-start;
+  }
+  .stats-section {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .action-buttons {
+    flex-direction: column;
+  }
+  .btn-like, .btn-share {
+    width: 100%;
+  }
+}
+
+/* Small Phones (≤480px) */
+@media (max-width: 480px) {
+  .artwork-detail {
+    padding: 20px;
+    gap: 16px;
+  }
+  .detail-title {
+    font-size: 20px;
+  }
+  .description-section p {
+    font-size: 14px;
+  }
+  .stats-section {
+    grid-template-columns: 1fr 1fr;
+  }
+  .similar-artworks-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .btn-follow-artist {
+    width: 100%;
+    font-size: 0.8rem;
+  }
+  .creator-avatar,
+  .creator-avatar-small {
+    width: 36px;
+    height: 36px;
+  }
 }

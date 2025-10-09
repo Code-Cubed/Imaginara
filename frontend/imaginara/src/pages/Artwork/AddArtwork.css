@@ -1,17 +1,15 @@
-/* ==============================
-   UPLOAD PAGE STYLING
-   ============================== */
-
 .page-container {
   display: flex;
   min-height: 100vh;
   background-color: #f5f5f5;
+  flex-direction: column;
 }
 
 .main-content {
   flex: 1;
   padding: 40px;
   margin-left: 72px;
+  transition: all 0.3s ease;
 }
 
 .upload-container {
@@ -25,6 +23,7 @@
 
 .upload-header {
   margin-bottom: 32px;
+  text-align: center;
 }
 
 .upload-title {
@@ -104,8 +103,9 @@
 
 .media-type-option input[type="radio"] {
   margin-right: 8px;
-  accent-color: #9c27b0; /* modern styling for radio buttons */
+  accent-color: #9c27b0;
 }
+
 
 .file-upload-area {
   border: 2px dashed #ddd;
@@ -145,6 +145,7 @@
   display: none;
 }
 
+
 .preview-container {
   position: relative;
 }
@@ -173,6 +174,7 @@
   background-color: #d32f2f;
 }
 
+
 .form-input,
 .form-select,
 .form-textarea {
@@ -190,7 +192,6 @@
 .form-textarea:focus {
   border-color: #9c27b0;
   box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.1);
-  outline: 2px solid rgba(156, 39, 176, 0.3);
 }
 
 .form-textarea {
@@ -198,6 +199,7 @@
   min-height: 120px;
   max-height: 300px;
 }
+
 
 .form-actions {
   display: flex;
@@ -243,25 +245,87 @@
   transform: none;
 }
 
+
+
+/* Tablets */
 @media (max-width: 768px) {
   .main-content {
-    padding: 20px;
+    padding: 24px;
     margin-left: 0;
   }
 
   .upload-container {
     padding: 24px;
+    border-radius: 12px;
   }
 
   .upload-title {
-    font-size: 24px;
+    font-size: 26px;
   }
 
   .media-type-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .upload-form {
+    gap: 20px;
+  }
+
+  .file-upload-area {
+    padding: 24px;
+  }
+
   .form-actions {
     flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
+
+/* Mobile Devices */
+@media (max-width: 480px) {
+  .main-content {
+    padding: 16px;
+  }
+
+  .upload-container {
+    padding: 20px;
+  }
+
+  .upload-title {
+    font-size: 22px;
+  }
+
+  .upload-subtitle {
+    font-size: 14px;
+  }
+
+  .media-type-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .upload-icon {
+    font-size: 36px;
+  }
+
+  .upload-text {
+    font-size: 14px;
+  }
+
+  .upload-subtext {
+    font-size: 12px;
+  }
+
+  .preview-image,
+  .preview-video {
+    max-height: 250px;
+  }
+
+  .btn {
+    font-size: 14px;
+    padding: 12px 18px;
   }
 }

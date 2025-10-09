@@ -1,4 +1,3 @@
-// src/components/ProtectedLayout.jsx
 import React from "react";
 import LeftBar from "./leftBar/LeftBar";
 import TopBar from "./topBar/topBar";
