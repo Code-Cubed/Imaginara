@@ -71,7 +71,7 @@ function AppContent() {
           />
           <Route
             path="/signup"
-            element={isAuthenticated ? <Navigate to="/home" replace /> : <SignUp onRegister={handleLogin} />}
+            element={isAuthenticated ? <Navigate to="/home" replace /> : <SignUp onSignUp={handleLogin} />}
           />
            
           <Route path="/auth/callback" element={<OAuthCallback 

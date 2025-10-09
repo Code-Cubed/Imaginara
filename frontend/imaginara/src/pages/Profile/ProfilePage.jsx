@@ -272,7 +272,7 @@ const ProfilePage = () => {
 
       alert("Account deleted successfully");
       localStorage.removeItem("token");
-      navigate("/login");
+      navigate("/Landing");
     } catch (err) {
       alert(err.message);
     }
