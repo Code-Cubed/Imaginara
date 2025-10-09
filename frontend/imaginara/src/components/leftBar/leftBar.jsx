@@ -12,7 +12,8 @@ import {
     Power,
     BarChart2,
     Palette,
-    Sparkles 
+    Sparkles,
+    Mail
 } from 'lucide-react'; 
 
 const LeftBar = ({ onLogout }) => {
