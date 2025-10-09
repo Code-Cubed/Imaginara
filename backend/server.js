@@ -18,19 +18,39 @@ const express = require('express');
 const http = require('http');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const session = require('express-session'); // ✅ NEW
+const passport = require('passport');
 const artworkRoutes = require('./routes/artworks');
 const authRoutes = require('./routes/auth');
 const commentRoutes = require('./routes/comments');
 const userRoutes = require('./routes/users');
 const followRoutes = require('./routes/follow');
+const contactRoutes = require('./routes/contactRoutes');
 const { Server } = require('socket.io');
-
+const analyticsRoutes = require('./routes/analytics');
+const similarityRoutes = require('./routes/similarity');
 const app = express();
-
+require('./config/passport');
 // Middlewares
-app.use(cors());
-app.use(express.json({ limit: "10mb" }));
-
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+app.use(express.json());
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // true in production
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 // Connect to MongoDB
 connectDB();
 
@@ -40,6 +60,9 @@ app.use('/api/artworks', artworkRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/follow', followRoutes);
+app.use('/api/contact', contactRoutes); 
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/similarity', similarityRoutes);
 // Create HTTP server
 const server = http.createServer(app);
 

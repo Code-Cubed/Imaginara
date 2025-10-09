@@ -17,6 +17,10 @@ import ChatBot from './components/ChatBot/ChatBot';
 import ProtectedLayout from "./components/ProtectedLayout";
 import { ThemeProvider, ThemeContext } from "./Context/ThemeContext";
 import DiscoverUsers from './pages/Discover/DiscoverUsers';
+import ContactPage from './pages/Contact/ContactForm';
+import OAuthCallback from './pages/Auth/OAuthCallback';
+import AnalyticsDashboard from './pages/Analytics/AnalyticsDashboard';
+import SimilaritySearch from './pages/Similarity/SimilaritySearch';
 function App() {
   return (
     <ThemeProvider>
@@ -71,6 +75,10 @@ function AppContent() {
             path="/signup"
             element={isAuthenticated ? <Navigate to="/home" replace /> : <SignUp onRegister={handleLogin} />}
           />
+           
+          <Route path="/auth/callback" element={<OAuthCallback 
+           onLogin={handleLogin} />} />
+          
           <Route
           path="/forgot-password"
           element={
@@ -123,6 +131,16 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/similarity-search"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout onLogout={handleLogout}><SimilaritySearch /></ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/artwork/:id"
             element={
@@ -148,6 +166,16 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+
+           <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout onLogout={handleLogout}><AnalyticsDashboard onLogout={handleLogout} /></ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+
           <Route
               path="/discover"
               element={
@@ -158,6 +186,19 @@ function AppContent() {
                 </ProtectedRoute>
               }
             />
+
+            <Route
+              path="/contact"
+              element={
+                <ProtectedRoute>
+                  <ProtectedLayout onLogout={handleLogout}>
+                    <ContactPage />
+                  </ProtectedLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            
           {/* Default & Catch-all */}
           <Route
             path="/"
