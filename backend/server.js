@@ -17,6 +17,8 @@ const followRoutes = require('./routes/follow');
 const contactRoutes = require('./routes/contactRoutes');
 const analyticsRoutes = require('./routes/analytics');
 const similarityRoutes = require('./routes/similarity');
+const boardRoutes = require('./routes/boards');
+const collectionRoutes = require('./routes/collections');
 
 // ✅ NEW — AI Tag Generator Route
 const aiRoute = require('./routes/aiRoute');
@@ -68,6 +70,8 @@ app.use('/api/follow', followRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/similarity', similarityRoutes);
+app.use('/api/boards', boardRoutes);
+app.use('/api/collections', collectionRoutes);
 
 // ✅ Add AI route
 app.use('/api/ai', aiRoute);
