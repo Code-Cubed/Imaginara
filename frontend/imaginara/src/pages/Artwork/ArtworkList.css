@@ -76,10 +76,28 @@
   display: flex;
   gap: 0.6rem;
   margin-bottom: 2rem;
-  overflow-x: auto;
+  
+  /* --- KEY FOR HORIZONTAL SCROLLING --- */
+  overflow-x: scroll; /* Changed from 'auto' to 'scroll' to ensure consistency */
+  -webkit-overflow-scrolling: touch; /* Improves scrolling physics on iOS */
+  
+  /* --- KEY FOR DRAGGING/SWIPING --- */
+  cursor: grab;
+  
+  /* Optional: Scroll Snap for better alignment when flicking */
+  scroll-snap-type: x mandatory; 
+  
+  /* Optional: Hide scrollbar gracefully */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  
   padding-bottom: 0.6rem;
-  scrollbar-width: thin;
-  scrollbar-color: #d1d5db transparent;
+  /* scrollbar-color: #d1d5db transparent; */ /* Removed/Commented out due to hidden scrollbar */
+}
+
+/* Hide scrollbar for Chrome, Safari, and Opera */
+.category-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .category-tab {
@@ -91,7 +109,12 @@
   background-color: #f3f4f6;
   color: #6b7280;
   cursor: pointer;
+  
+
+  flex-shrink: 0; /* Prevents tabs from shrinking and forces overflow */
   white-space: nowrap;
+  scroll-snap-align: start; /* Aligns the start edge of the tab to the scroll container */
+  
   transition: all 0.3s ease;
 }
 
@@ -105,7 +128,6 @@
   color: white;
   box-shadow: 0 4px 10px rgba(147, 51, 234, 0.25);
 }
-
 /*  EMPTY STATES */
 .loading-container {
   text-align: center;

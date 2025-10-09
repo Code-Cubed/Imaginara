@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../../api/api";
- 
+import { Eye, EyeOff } from 'lucide-react'; // Import icons
+
 const Login = ({ onLogin }) => {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // New state for password visibility
+  const [showPassword, setShowPassword] = useState(false);
 
   // State to track mobile status
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -17,7 +20,7 @@ const Login = ({ onLogin }) => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
 
-    // Float animation
+    // Float animation (kept for completeness)
     let styleSheet = document.styleSheets[0];
     if (!styleSheet) {
       const style = document.createElement("style");
@@ -87,19 +90,30 @@ const Login = ({ onLogin }) => {
               required
               style={styles.input}
             />
-            <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              value={form.password}
-              onChange={handleChange}
-              required
-              style={styles.input}
-            />
+            {/* Password input with show/hide toggle */}
+            <div style={styles.passwordContainer}>
+              <input
+                type={showPassword ? "text" : "password"} // Dynamic type
+                name="password"
+                placeholder="Password"
+                value={form.password}
+                onChange={handleChange}
+                required
+                style={{ ...styles.input, paddingRight: '45px' }} // Add space for icon
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={styles.passwordToggle}
+              >
+                {showPassword ? <EyeOff size={20} color="#777" /> : <Eye size={20} color="#777" />}
+              </button>
+            </div>
+            
             {error && <p style={styles.error}>{error}</p>}
 
             {/* --- Forgot Password Link --- */}
-            <p style={{ ...styles.text, marginTop: "-10px", marginBottom: "10px" }}>
+            <p style={{ ...styles.text, marginTop: "-10px", marginBottom: "10px", textAlign: "right" }}>
               <span
                 style={{ color: "#6a82fb", cursor: "pointer", textDecoration: "underline" }}
                 onClick={() => navigate("/forgot-password")}
@@ -111,8 +125,6 @@ const Login = ({ onLogin }) => {
             <button type="submit" disabled={loading} style={styles.button}>
               {loading ? "Logging In..." : "Login"}
             </button>
-
-           
 
             <p style={styles.text}>
               Don’t have an account?{" "}
@@ -166,7 +178,35 @@ const styles = {
   rightSection: { display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#fefefe" },
   form: { display: "flex", flexDirection: "column", gap: "20px" },
   title: { textAlign: "center", fontSize: "32px", color: "#333", marginBottom: "20px", fontWeight: "700" },
-  input: { padding: "14px", borderRadius: "10px", border: "1px solid #e0e0e0", outline: "none", fontSize: "16px", transition: "border-color 0.3s ease, box-shadow 0.3s ease" },
+  
+  // New styles for password input
+  passwordContainer: {
+    position: 'relative',
+    width: '100%',
+  },
+  passwordToggle: {
+    position: 'absolute',
+    top: '50%',
+    right: '10px',
+    transform: 'translateY(-50%)',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    padding: '5px',
+    lineHeight: '0',
+  },
+  // End new styles
+  
+  input: { 
+    padding: "14px", 
+    borderRadius: "10px", 
+    border: "1px solid #e0e0e0", 
+    outline: "none", 
+    fontSize: "16px", 
+    transition: "border-color 0.3s ease, box-shadow 0.3s ease",
+    width: '100%', // Ensure input fills the container
+    boxSizing: 'border-box' // Include padding in the element's total width and height
+  },
   button: { padding: "15px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg, #6a82fb 0%, #fc5c7d 100%)", color: "#fff", cursor: "pointer", fontWeight: "700", fontSize: "17px", letterSpacing: "0.5px", transition: "all 0.3s ease", boxShadow: "0 8px 20px rgba(106, 130, 251, 0.3)" },
   error: { color: "#e74c3c", textAlign: "center", fontSize: "15px", marginTop: "-10px" },
   text: { textAlign: "center", fontSize: "15px", color: "#555" },

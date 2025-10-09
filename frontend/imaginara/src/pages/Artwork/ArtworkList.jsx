@@ -20,9 +20,22 @@ const ArtworkList = ({ onLogout }) => {
   const [searchTags, setSearchTags] = useState("");
 
   const categories = [
-    'All', 'Art', 'Photography', 'Writing', 'Performance',
-    'Digital Art', 'Sculpture', 'Music', 'Dance', 'Other'
-  ];
+  'All',
+  'Art',
+  'Photography',
+  'Writing',
+  'Document',
+  'Vehicle',
+  'Digital Art',
+  'Sculpture',
+  'Music',
+  'Dance',
+  'Crafts',
+  'Aesthetic',
+  'Nature',
+  'Other'
+];
+
 
   useEffect(() => {
     fetchArtworks();
@@ -108,7 +121,9 @@ const ArtworkList = ({ onLogout }) => {
           </div>
 
           {/* Categories */}
-          <div className="category-tabs mb-6 overflow-x-auto">
+         <div className="category-tabs mb-6 overflow-x-scroll scrollbar-hide" 
+>
+ 
             {categories.map((cat) => (
               <button
                 key={cat}

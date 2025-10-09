@@ -25,11 +25,15 @@ const AddArtwork = ({ onLogout }) => {
     "Art",
     "Photography",
     "Writing",
-    "Performance",
+    "Document",
     "Digital Art",
     "Sculpture",
+    "Vehicle",
     "Music",
     "Dance",
+    "Crafts",
+    "Aesthetic",
+    "Nature",
     "Other",
   ];
 

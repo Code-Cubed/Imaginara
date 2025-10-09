@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../../api/api";
 import OAuthButtons from "./OAuthButtons"; // Import OAuth component
+import { Eye, EyeOff } from 'lucide-react'; // Import icons
 
 const SignUp = ({ onSignUp }) => {
   const navigate = useNavigate();
@@ -11,7 +12,11 @@ const SignUp = ({ onSignUp }) => {
   const [avatar, setAvatar] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isFileInputHover, setIsFileInputHover] = useState(false);
+  // New state for password visibility
+  const [showPassword, setShowPassword] = useState(false);
+  
   const validEmailRegex = /^[a-zA-Z0-9._%+-]+@(gmail\.com|yahoo\.com|outlook\.com)$/;
+  
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
@@ -133,15 +138,27 @@ const SignUp = ({ onSignUp }) => {
               required
               style={styles.input}
             />
-            <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              value={form.password}
-              onChange={handleChange}
-              required
-              style={styles.input}
-            />
+            
+            {/* Password input with show/hide toggle */}
+            <div style={styles.passwordContainer}>
+              <input
+                type={showPassword ? "text" : "password"} // Dynamic type
+                name="password"
+                placeholder="Password"
+                value={form.password}
+                onChange={handleChange}
+                required
+                style={{ ...styles.input, paddingRight: '45px' }} // Add space for icon
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={styles.passwordToggle}
+              >
+                {showPassword ? <EyeOff size={20} color="#777" /> : <Eye size={20} color="#777" />}
+              </button>
+            </div>
+
 
             {/* Avatar Upload */}
             <div
@@ -302,6 +319,25 @@ const styles = {
     fontWeight: "700",
   },
 
+  // New styles for password input
+  passwordContainer: {
+    position: 'relative',
+    width: '100%',
+  },
+  passwordToggle: {
+    position: 'absolute',
+    top: '50%',
+    right: '10px',
+    transform: 'translateY(-50%)',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    padding: '5px',
+    lineHeight: '0',
+    zIndex: 10,
+  },
+  // End new styles
+
   input: {
     padding: "16px",
     borderRadius: "12px",
@@ -310,6 +346,8 @@ const styles = {
     fontSize: "16px",
     backgroundColor: "#f9fbfd",
     transition: "border-color 0.3s ease, box-shadow 0.3s ease",
+    width: '100%',
+    boxSizing: 'border-box'
   },
 
   fileInputContainer: {
