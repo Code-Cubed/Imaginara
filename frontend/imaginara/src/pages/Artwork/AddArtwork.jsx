@@ -1,6 +1,7 @@
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { ThemeContext } from "../../Context/ThemeContext";
+import { FileText, Music } from "lucide-react";
 import axios from "axios";
 
 const AddArtwork = ({ onLogout }) => {
@@ -44,7 +45,7 @@ const AddArtwork = ({ onLogout }) => {
     { value: "document", label: "Document", accept: ".pdf,.doc,.docx" },
   ];
 
-  // 🔹 Handle input
+  // Handle input
   const handleInputChange = (e) => {
     const { name, value, type } = e.target;
     if (type === "radio") {
@@ -55,7 +56,7 @@ const AddArtwork = ({ onLogout }) => {
     }
   };
 
-  // 🔹 Handle file upload
+  // Handle file upload with preview
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -68,19 +69,31 @@ const AddArtwork = ({ onLogout }) => {
     setFormData({ ...formData, file });
     setError("");
 
+    // Generate preview based on media type
     if (file.type.startsWith("image/") || file.type.startsWith("video/")) {
       const reader = new FileReader();
       reader.onloadend = () => setPreview(reader.result);
       reader.readAsDataURL(file);
+    } else if (file.type.startsWith("audio/")) {
+      // Audio preview
+      const reader = new FileReader();
+      reader.onloadend = () => setPreview({ type: 'audio', url: reader.result, name: file.name });
+      reader.readAsDataURL(file);
     } else {
-      setPreview(null);
+      // Document preview
+      setPreview({ type: 'document', name: file.name, size: (file.size / 1024 / 1024).toFixed(2) });
     }
   };
 
-  // 🔹 AI Tag Generator
+  // AI Tag Generator
   const handleGenerateTags = async () => {
     if (!formData.file) {
       setError("Please upload an image first.");
+      return;
+    }
+
+    if (formData.mediaType !== 'image') {
+      setError("AI tag generation only works with images.");
       return;
     }
 
@@ -104,7 +117,7 @@ const AddArtwork = ({ onLogout }) => {
     }
   };
 
-  // 🔹 Submit Artwork
+  // Submit Artwork
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.file) return setError("Please select a file to upload");
@@ -150,6 +163,115 @@ const AddArtwork = ({ onLogout }) => {
       setError(err.message || "Failed to upload artwork");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Render preview based on type
+  const renderPreview = () => {
+    if (!preview) {
+      return (
+        <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer w-full hover:border-indigo-400 transition">
+          <div className="text-3xl mb-2">📤</div>
+          <p className="text-sm font-medium">Click to upload or drag and drop</p>
+          <p className="text-xs text-gray-400 mb-2">Maximum file size: 50MB</p>
+          <input
+            type="file"
+            onChange={handleFileChange}
+            accept={mediaTypes.find((t) => t.value === formData.mediaType)?.accept}
+            className="hidden"
+          />
+        </label>
+      );
+    }
+
+    // Image preview
+    if (formData.mediaType === "image" && typeof preview === 'string') {
+      return (
+        <div className="flex flex-col items-center gap-2">
+          <img
+            src={preview}
+            alt="Preview"
+            className="w-full max-w-md h-64 object-contain rounded shadow"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setFormData({ ...formData, file: null });
+              setPreview(null);
+            }}
+            className="text-xs text-red-500 hover:underline mt-1"
+          >
+            ✕ Remove
+          </button>
+        </div>
+      );
+    }
+
+    // Video preview
+    if (formData.mediaType === "video" && typeof preview === 'string') {
+      return (
+        <div className="flex flex-col items-center gap-2">
+          <video src={preview} controls className="w-full max-w-md h-64 rounded shadow" />
+          <button
+            type="button"
+            onClick={() => {
+              setFormData({ ...formData, file: null });
+              setPreview(null);
+            }}
+            className="text-xs text-red-500 hover:underline mt-1"
+          >
+            ✕ Remove
+          </button>
+        </div>
+      );
+    }
+
+    // Audio preview
+    if (formData.mediaType === "audio" && preview?.type === 'audio') {
+      return (
+        <div className="flex flex-col items-center gap-3 p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg w-full">
+          <div className="w-20 h-20 bg-purple-500 rounded-full flex items-center justify-center">
+            <Music className="w-10 h-10 text-white" />
+          </div>
+          <p className="text-sm font-medium text-gray-700">{preview.name}</p>
+          <audio src={preview.url} controls className="w-full max-w-md" />
+          <button
+            type="button"
+            onClick={() => {
+              setFormData({ ...formData, file: null });
+              setPreview(null);
+            }}
+            className="text-xs text-red-500 hover:underline mt-1"
+          >
+            ✕ Remove
+          </button>
+        </div>
+      );
+    }
+
+    // Document preview
+    if (formData.mediaType === "document" && preview?.type === 'document') {
+      return (
+        <div className="flex flex-col items-center gap-3 p-6 bg-gray-50 rounded-lg w-full">
+          <div className="w-20 h-20 bg-indigo-500 rounded-full flex items-center justify-center">
+            <FileText className="w-10 h-10 text-white" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-medium text-gray-700">{preview.name}</p>
+            <p className="text-xs text-gray-500 mt-1">{preview.size} MB</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setFormData({ ...formData, file: null });
+              setPreview(null);
+            }}
+            className="text-xs text-red-500 hover:underline mt-1"
+          >
+            ✕ Remove
+          </button>
+        </div>
+      );
     }
   };
 
@@ -201,42 +323,7 @@ const AddArtwork = ({ onLogout }) => {
               Upload File <span className="text-red-500">*</span>
             </label>
             <div className="flex flex-col items-center">
-              {preview ? (
-                <div className="flex flex-col items-center gap-2">
-                  {formData.mediaType === "image" && (
-                    <img
-                      src={preview}
-                      alt="Preview"
-                      className="w-48 h-48 object-contain rounded shadow"
-                    />
-                  )}
-                  {formData.mediaType === "video" && (
-                    <video src={preview} controls className="w-48 h-48 rounded shadow" />
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData({ ...formData, file: null });
-                      setPreview(null);
-                    }}
-                    className="text-xs text-red-500 hover:underline mt-1"
-                  >
-                    ✕ Remove
-                  </button>
-                </div>
-              ) : (
-                <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 cursor-pointer w-full">
-                  <div className="text-3xl mb-2">📤</div>
-                  <p className="text-sm font-medium">Click to upload or drag and drop</p>
-                  <p className="text-xs text-gray-400 mb-2">Maximum file size: 50MB</p>
-                  <input
-                    type="file"
-                    onChange={handleFileChange}
-                    accept={mediaTypes.find((t) => t.value === formData.mediaType)?.accept}
-                    className="hidden"
-                  />
-                </label>
-              )}
+              {renderPreview()}
             </div>
           </div>
 
@@ -305,12 +392,15 @@ const AddArtwork = ({ onLogout }) => {
               <button
                 type="button"
                 onClick={handleGenerateTags}
-                disabled={tagLoading || !formData.file}
-                className="px-3 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600 transition disabled:opacity-60"
+                disabled={tagLoading || !formData.file || formData.mediaType !== 'image'}
+                className="px-3 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600 transition disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {tagLoading ? "Generating..." : "✨ AI Generate"}
               </button>
             </div>
+            {formData.mediaType !== 'image' && (
+              <p className="text-xs text-gray-500 mt-1">AI tag generation only available for images</p>
+            )}
           </div>
 
           {/* Buttons */}

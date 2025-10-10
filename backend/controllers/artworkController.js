@@ -6,26 +6,49 @@ const { uploadToCloudinary } = require('../middlewares/upload');
 exports.createArtwork = async (req, res) => {
   try {
     const { title, description, tags = [], category, mediaType } = req.body;
-    if (!req.file) return res.status(400).json({ message: 'No file' });
-    const uploaded = await uploadToCloudinary(req.file.buffer, 'gallery/media');
-    const thumb = uploaded.eager && uploaded.eager[0] ? uploaded.eager[0].secure_url : uploaded.secure_url;
+    
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Upload to Cloudinary with proper media type
+    const uploaded = await uploadToCloudinary(
+      req.file.buffer, 
+      'gallery/media',
+      mediaType || 'image'
+    );
+
+    // Generate thumbnail URL based on media type
+    let thumbnailUrl = uploaded.secure_url;
+    
+    if (mediaType === 'video' && uploaded.eager && uploaded.eager[0]) {
+      thumbnailUrl = uploaded.eager[0].secure_url;
+    } else if (mediaType === 'image' && uploaded.eager && uploaded.eager[0]) {
+      thumbnailUrl = uploaded.eager[0].secure_url;
+    } else if (mediaType === 'audio') {
+      // Use a default audio icon or generate waveform
+      thumbnailUrl = 'https://res.cloudinary.com/your-cloud/image/upload/v1/defaults/audio-icon.png';
+    } else if (mediaType === 'document') {
+      // Use a default document icon
+      thumbnailUrl = 'https://res.cloudinary.com/your-cloud/image/upload/v1/defaults/doc-icon.png';
+    }
 
     const art = await Artwork.create({
       title,
       description,
       mediaUrl: uploaded.secure_url,
-      thumbnailUrl: thumb,
+      thumbnailUrl: thumbnailUrl,
       mediaType: mediaType || 'image',
       creator: req.user._id,
       tags: typeof tags === 'string' ? tags.split(',').map(t => t.trim()) : tags,
       category,
-      embeddingsGenerated: false // Will be generated asynchronously
+      embeddingsGenerated: false
     });
 
-    // Generate embeddings asynchronously (don't wait)
+    // Generate embeddings asynchronously
     generateEmbeddingsAsync(art._id);
 
-    // Emit socket event for new upload
+    // Emit socket event
     const io = req.app.get('io');
     if (io) {
       io.emit('artwork-uploaded', { 
@@ -35,7 +58,8 @@ exports.createArtwork = async (req, res) => {
     }
 
     res.json(art);
-  } catch (err) { 
+  } catch (err) {
+    console.error('Upload error:', err);
     res.status(500).json({ message: err.message }); 
   }
 };
@@ -51,17 +75,14 @@ const generateEmbeddingsAsync = async (artworkId) => {
     const artwork = await Artwork.findById(artworkId);
     if (!artwork) return;
 
-    // Generate text embedding
     const artworkText = generateArtworkText(artwork);
     const textEmbedding = await generateTextEmbedding(artworkText);
 
-    // Generate image embedding (only for images)
     let imageEmbedding = null;
     if (artwork.mediaType === 'image' && artwork.mediaUrl) {
       imageEmbedding = await generateImageEmbedding(artwork.mediaUrl);
     }
 
-    // Update artwork with embeddings
     artwork.textEmbedding = textEmbedding;
     if (imageEmbedding) {
       artwork.imageEmbedding = imageEmbedding;
@@ -112,7 +133,6 @@ exports.incrementView = async (req, res) => {
   }
 };
 
-
 exports.listArtworks = async (req, res) => {
   try {
     const { page = 1, limit = 20, q, tags, category, sort } = req.query;
@@ -147,7 +167,6 @@ exports.likeArtwork = async (req, res) => {
   }
 };
 
-// Bookmark/Save artwork
 exports.bookmarkArtwork = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -167,7 +186,6 @@ exports.bookmarkArtwork = async (req, res) => {
     
     await user.save();
 
-    // Emit socket event
     const io = req.app.get('io');
     if (io) {
       io.emit('bookmark-updated', { 
@@ -186,18 +204,16 @@ exports.bookmarkArtwork = async (req, res) => {
   }
 };
 
-
 exports.deleteArtwork = async (req, res) => {
   try {
     const artworkId = req.params.id;
-    
-  
     const art = await Artwork.findById(artworkId);
     if (!art) return res.status(404).json({ message: 'Artwork not found' });
 
     if (art.creator.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Forbidden: You do not have permission to delete this artwork.' });
     }
+    
     await art.deleteOne(); 
     await Comment.deleteMany({ artwork: artworkId });
 
