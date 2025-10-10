@@ -20,7 +20,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Optional: handle 401/403 globally
+//  handle 401/403 globally
 api.interceptors.response.use(
   (response) => response,
   (error) => {

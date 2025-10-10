@@ -8,9 +8,9 @@ const session = require('express-session');
 const passport = require('passport');
 const { Server } = require('socket.io');
 
-// ======================
-// 🔹 Routes
-// ======================
+ 
+// Routes
+
 const artworkRoutes = require('./routes/artworks');
 const authRoutes = require('./routes/auth');
 const commentRoutes = require('./routes/comments');
@@ -22,7 +22,7 @@ const similarityRoutes = require('./routes/similarity');
 const boardRoutes = require('./routes/boards');
 const collectionRoutes = require('./routes/collections');
 
-// ✅ AI Routes
+//  AI Routes
 const aiRoute = require('./routes/aiRoute');
 const geminiRoute = require('./routes/geminiRoute');
 const imageGenerationRoute = require('./routes/imageGeneration');
@@ -30,9 +30,9 @@ const imageGenerationRoute = require('./routes/imageGeneration');
 const app = express();
 require('./config/passport');
 
-// ======================
-// 🔹 Middlewares
-// ======================
+
+//  Middlewares
+
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -58,14 +58,12 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// ======================
-// 🔹 Connect to MongoDB
-// ======================
+
 connectDB();
 
-// ======================
-// 🔹 Create HTTP Server + Socket.IO
-// ======================
+
+//  Create HTTP Server + Socket.IO
+
 const server = http.createServer(app);
 
 const io = new Server(server, {
@@ -80,15 +78,15 @@ const io = new Server(server, {
 // Make io accessible to routes
 app.set('io', io);
 
-// ======================
-// 🔹 Socket.IO Events
-// ======================
+
+//  Socket.IO Events
+
 const boardUsers = new Map(); // Track users per board
 
 io.on('connection', (socket) => {
   console.log('✅ Socket connected:', socket.id);
 
-  // ========== Existing User Events ==========
+  // Existing User Events 
   socket.on('join-user', (userId) => {
     socket.join(`user-${userId}`);
     console.log(`User ${userId} joined personal room`);
@@ -98,7 +96,7 @@ io.on('connection', (socket) => {
     socket.leave(`user-${userId}`);
   });
 
-  // ========== Existing Artwork Events ==========
+  // Existing Artwork Events 
   socket.on('join-artwork', (artworkId) => {
     socket.join(artworkId);
   });
@@ -115,7 +113,7 @@ io.on('connection', (socket) => {
     io.to(data.artworkId).emit('like-updated', { likes: data.likes });
   });
 
-  // ========== FIXED: Board Events ==========
+  // FIXED: Board Events 
   socket.on('join-board', (boardId) => {
     // Use boardId directly (no prefix) to match frontend
     socket.join(boardId);
@@ -174,7 +172,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  // ========== Personal Room Events ==========
+  // Personal Room Events 
   socket.on('join-personal-room', (roomId) => {
     socket.join(`room-${roomId}`);
     console.log(`User ${socket.id} joined personal room ${roomId}`);
@@ -198,7 +196,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  // ========== Disconnect Event ==========
+  //  Disconnect Event 
   socket.on('disconnect', () => {
     console.log('❌ Socket disconnected:', socket.id);
     
@@ -219,9 +217,9 @@ io.on('connection', (socket) => {
   });
 });
 
-// ======================
-// 🔹 API Routes
-// ======================
+
+//  API Routes
+
 app.use('/api/auth', authRoutes);
 app.use('/api/artworks', artworkRoutes);
 app.use('/api/comments', commentRoutes);
@@ -233,14 +231,14 @@ app.use('/api/similarity', similarityRoutes);
 app.use('/api/boards', boardRoutes);
 app.use('/api/collections', collectionRoutes);
 
-// ✅ AI Routes
+// AI Routes
 app.use('/api/ai', aiRoute);
 app.use('/api/gemini', geminiRoute);
 app.use('/api/image-generation', imageGenerationRoute);
 
-// ======================
-// 🔹 Health Check Route
-// ======================
+
+// Health Check Route
+
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     success: true,
@@ -265,9 +263,9 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// ======================
-// 🔹 Start Server
-// ======================
+
+//  Start Server
+
 const PORT = process.env.PORT || 8000;
 server.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);

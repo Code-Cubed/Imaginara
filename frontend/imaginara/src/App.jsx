@@ -32,7 +32,7 @@ function App() {
 }
 
 function AppContent() {
-  const { theme } = useContext(ThemeContext); // ✅ added missing import
+  const { theme } = useContext(ThemeContext); 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 

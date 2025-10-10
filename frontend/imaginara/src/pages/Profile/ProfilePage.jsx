@@ -110,9 +110,8 @@ const ProfilePage = () => {
     );
   };
 
-  // -------------------------------------------------------------------
+  
   // Core Data Fetching Functions
-  // -------------------------------------------------------------------
 
   const fetchProfile = async () => {
     try {
@@ -179,10 +178,8 @@ const ProfilePage = () => {
     }
   };
 
-  // -------------------------------------------------------------------
+  
   // Effects
-  // -------------------------------------------------------------------
-
   // Socket Setup
   useEffect(() => {
     if (!userId) {
@@ -240,10 +237,7 @@ const ProfilePage = () => {
   }, [userId]);
 
 
-  // -------------------------------------------------------------------
   // Handlers
-  // -------------------------------------------------------------------
-
   const openFollowersModal = (type) => {
     setModalType(type);
     setShowFollowersModal(true);
@@ -415,9 +409,8 @@ const ProfilePage = () => {
   };
 
 
-  // -------------------------------------------------------------------
+
   // Render Functions
-  // -------------------------------------------------------------------
 
   const renderArtworkCard = (artwork, showRemoveBookmark = false) => {
     // Use VideoCard component for videos
@@ -626,10 +619,8 @@ const ProfilePage = () => {
     }
   };
 
-  // -------------------------------------------------------------------
+  
   // Main Component Return
-  // -------------------------------------------------------------------
-
   if (loading || !profile) {
     return (
       <div className="flex min-h-screen bg-gray-100">

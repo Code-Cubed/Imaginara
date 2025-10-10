@@ -7,7 +7,7 @@ const { default: EmailOTP } = require('../models/EmailOTP');
 const { sendEmail } = require('../utils/sendEmail');
 const { uploadToCloudinary } = require('../middlewares/upload');
 
-// ---------- REGISTER ----------
+//  REGISTER 
 exports.register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -29,7 +29,7 @@ exports.register = async (req, res) => {
       email,
       password: hashed,
       avatar: avatarUrl,
-      provider: 'local', // ✅ NEW
+      provider: 'local', 
     });
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
@@ -48,7 +48,7 @@ exports.register = async (req, res) => {
   }
 };
 
-// ---------- LOGIN ----------
+//  LOGIN 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -80,7 +80,7 @@ exports.login = async (req, res) => {
   }
 };
 
-// ---------- SEND OTP ----------
+//  SEND OTP 
 exports.sendOtp = async (req, res) => {
   const { email } = req.body;
   try {
@@ -109,7 +109,7 @@ exports.sendOtp = async (req, res) => {
   }
 };
 
-// ---------- VERIFY OTP ----------
+//  VERIFY OTP 
 exports.verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
   try {
@@ -131,7 +131,7 @@ exports.verifyOtp = async (req, res) => {
   }
 };
 
-// ---------- RESET PASSWORD USING OTP ----------
+//  RESET PASSWORD USING OTP 
 exports.resetPasswordWithOtp = async (req, res) => {
   const { email, otp, newPassword } = req.body;
   try {
@@ -169,9 +169,9 @@ exports.resetPasswordWithOtp = async (req, res) => {
   }
 };
 
-// ============================================
-// ✅ NEW: OAUTH CALLBACK HANDLERS
-// ============================================
+
+// NEW: OAUTH CALLBACK HANDLERS
+
 
 // Handle successful OAuth authentication
 exports.oauthSuccess = (req, res) => {

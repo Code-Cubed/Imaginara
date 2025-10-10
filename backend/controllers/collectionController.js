@@ -1,4 +1,4 @@
-// controllers/collectionController.js
+
 const Collection = require('../models/Collection');
 const Board = require('../models/Board');
 const User = require('../models/User');

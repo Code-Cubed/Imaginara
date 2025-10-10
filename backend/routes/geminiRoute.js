@@ -1,4 +1,4 @@
-// Example: routes/gemini.js or similar
+
 
 const express = require("express");
 // ❌ No longer need 'node-fetch' since we'll use the official SDK

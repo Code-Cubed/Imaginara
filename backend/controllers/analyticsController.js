@@ -1,4 +1,4 @@
-// controllers/analyticsController.js
+
 const Artwork = require('../models/Artwork');
 const Comment = require('../models/Comment');
 const User = require('../models/User');

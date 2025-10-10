@@ -33,16 +33,12 @@ const FollowersModal = ({ isOpen, onClose, userId, type, currentUserId, onUpdate
       setUsers(userList);
       
       // Check follow status for each user if viewing someone else's list OR if viewing your own FOLLOWING list
-      // We check the status for every user *unless* the list is the user's own 'followers' list, 
-      // where we know all listed users are followers.
       const shouldCheckStatus = currentUserId && (currentUserId !== userId || type === 'following');
       
       if (shouldCheckStatus) {
         const token = localStorage.getItem('token');
         const statusPromises = userList.map(async (user) => {
           // If viewing your own 'following' list, you are already following them, 
-          // but we check in case the API call failed to distinguish status easily later.
-          // For other users' lists, we check if current user follows them.
           const res = await fetch(`http://localhost:8000/api/follow/check/${user._id}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
@@ -168,7 +164,7 @@ const FollowersModal = ({ isOpen, onClose, userId, type, currentUserId, onUpdate
                   {/* Show action button only if the user is logged in and not viewing their own profile card */}
                   {currentUserId && user._id !== currentUserId && (
                     <div className="user-actions">
-                      {/* New Logic Check:
+                      {/* Check:
                           1. If it's the current user's list (isCurrentUserList), AND
                           2. We are viewing the 'followers' tab, show REMOVE FOLLOWER button.
                       */}
@@ -180,10 +176,9 @@ const FollowersModal = ({ isOpen, onClose, userId, type, currentUserId, onUpdate
                           <Trash2 size={16} /> Remove
                         </button>
                       ) : 
-                       /* New Logic Check:
+                       /*  Check:
                           1. If it's the current user's list (isCurrentUserList), AND
                           2. We are viewing the 'following' tab, show UNFOLLOW (REMOVE) button.
-                          Note: We use handleUnfollow here (which is just the toggle)
                        */
                       isCurrentUserList && type === 'following' ? (
                         <button
@@ -193,7 +188,7 @@ const FollowersModal = ({ isOpen, onClose, userId, type, currentUserId, onUpdate
                           <X size={16} /> Unfollow
                         </button>
                       ) : (
-                        /* Default: Show Follow/Following Toggle for all other cases (e.g., viewing someone else's list) */
+                        
                         <button
                           onClick={() => handleUnfollow(user._id)} // Using handleUnfollow since it's the same toggle logic
                           className={`btn btn-sm ${

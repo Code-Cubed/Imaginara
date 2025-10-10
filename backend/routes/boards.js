@@ -103,7 +103,7 @@ router.post('/:id/add-artwork', auth, async (req, res) => {
 // Remove artwork from board
 router.delete('/:id/artworks/:artworkId', auth, boardController.removeArtworkFromBoard);
 
-// ========== User boards ==========
+//  User boards 
 router.get('/user/:userId', boardController.getUserBoards);
 
 module.exports = router;

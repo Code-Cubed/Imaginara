@@ -1,6 +1,4 @@
-/* ========================================
-   BOARD DETAIL PAGE - PREMIUM ANIMATED UI
-   ======================================== */
+
 
 /* Global Container */
 .page-container {
@@ -37,9 +35,7 @@
   margin: 0 auto;
 }
 
-/* ========================================
-   LOADING & ERROR STATES
-   ======================================== */
+
 
 .loading-container, .error-container {
   display: flex;
@@ -70,9 +66,7 @@
   margin-bottom: 1rem;
 }
 
-/* ========================================
-   BOARD DETAIL CONTAINER
-   ======================================== */
+
 
 .board-detail-container {
   background: rgba(255, 255, 255, 0.95);
@@ -96,9 +90,7 @@
   }
 }
 
-/* ========================================
-   BOARD HEADER
-   ======================================== */
+
 
 .board-detail-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -300,9 +292,7 @@
   cursor: not-allowed;
 }
 
-/* ========================================
-   MODAL STYLES
-   ======================================== */
+
 
 .modal-overlay {
   position: fixed;
@@ -501,9 +491,7 @@
   flex-wrap: wrap;
 }
 
-/* ========================================
-   BOARD CONTENT
-   ======================================== */
+
 
 .board-content-wrapper {
   display: flex;
@@ -731,9 +719,7 @@
   margin: 1.5rem 0;
 }
 
-/* ========================================
-   CHAT PANEL
-   ======================================== */
+/
 
 .chat-panel {
   flex: 0 0 35%;
@@ -968,9 +954,7 @@
   cursor: not-allowed;
 }
 
-/* ========================================
-   RESPONSIVE DESIGN
-   ======================================== */
+
 
 @media (max-width: 1024px) {
   .board-content-wrapper {
@@ -1085,9 +1069,7 @@
   }
 }
 
-/* ========================================
-   CUSTOM ANIMATIONS & EFFECTS
-   ======================================== */
+
 
 /* Floating Animation for Empty States */
 @keyframes float {
@@ -1411,9 +1393,7 @@ input:focus-visible {
   animation: rotateIn 0.6s ease-out;
 }
 
-/* ========================================
-   DARK MODE SUPPORT (Optional)
-   ======================================== */
+
 
 @media (prefers-color-scheme: dark) {
   .board-detail-container {
@@ -1453,9 +1433,6 @@ input:focus-visible {
   }
 }
 
-/* ========================================
-   PRINT STYLES
-   ======================================== */
 
 @media print {
   .back-btn,

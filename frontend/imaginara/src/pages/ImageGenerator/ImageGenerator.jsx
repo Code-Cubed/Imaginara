@@ -28,7 +28,7 @@ const ImageGenerator = () => {
       return;
     }
 
-    // ✅ NSFW / Blocked words filter
+    // NSFW / Blocked words filter
     const lowerPrompt = prompt.toLowerCase();
     const containsBlockedWord = blockedKeywords.some(word =>
       lowerPrompt.includes(word)

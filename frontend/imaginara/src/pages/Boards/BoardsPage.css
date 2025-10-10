@@ -1,6 +1,4 @@
-/* ========================================
-   BOARDS PAGE - PREMIUM ANIMATED UI
-   ======================================== */
+
 
 /* Global Container */
 .page-container {
@@ -37,9 +35,7 @@
   margin: 0 auto;
 }
 
-/* ========================================
-   LOADING & ERROR STATES
-   ======================================== */
+
 
 .loading-container {
   display: flex;
@@ -95,9 +91,7 @@
   box-shadow: 0 5px 20px rgba(255, 107, 107, 0.3);
 }
 
-/* ========================================
-   BOARDS CONTAINER
-   ======================================== */
+
 
 .boards-container {
   background: rgba(255, 255, 255, 0.95);
@@ -121,9 +115,7 @@
   }
 }
 
-/* ========================================
-   BOARDS HEADER
-   ======================================== */
+
 
 .boards-header {
   display: flex;
@@ -165,9 +157,6 @@
   margin-top: 0.5rem;
 }
 
-/* ========================================
-   BUTTONS
-   ======================================== */
 
 .btn {
   padding: 0.75rem 1.5rem;
@@ -234,9 +223,7 @@
   box-shadow: 0 8px 30px rgba(245, 87, 108, 0.5);
 }
 
-/* ========================================
-   MODAL STYLES
-   ======================================== */
+
 
 .modal-overlay {
   position: fixed;
@@ -306,9 +293,7 @@
   border-radius: 10px;
 }
 
-/* ========================================
-   FORM STYLES
-   ======================================== */
+
 
 .form-group {
   margin-bottom: 1.5rem;
@@ -356,9 +341,7 @@
   margin-top: 2rem;
 }
 
-/* ========================================
-   PERSONAL ROOMS SECTION
-   ======================================== */
+
 
 .personal-rooms-section {
   margin-bottom: 3rem;
@@ -482,9 +465,7 @@
   white-space: nowrap;
 }
 
-/* ========================================
-   BOARDS SECTION
-   ======================================== */
+/
 
 .boards-section {
   animation: fadeInUp 0.6s ease-out 0.4s both;
@@ -496,9 +477,7 @@
   gap: 2rem;
 }
 
-/* ========================================
-   BOARD CARD
-   ======================================== */
+
 
 .board-card {
   background: white;
@@ -715,9 +694,6 @@
   color: #667eea;
 }
 
-/* ========================================
-   EMPTY STATE
-   ======================================== */
 
 .empty-state {
   display: flex;
@@ -757,9 +733,7 @@
   margin-bottom: 1rem;
 }
 
-/* ========================================
-   RESPONSIVE DESIGN
-   ======================================== */
+
 
 @media (max-width: 1024px) {
   .boards-grid {
@@ -893,9 +867,7 @@
   }
 }
 
-/* ========================================
-   ADDITIONAL ANIMATIONS
-   ======================================== */
+
 
 /* Ripple Effect */
 .btn:active::after {
@@ -1047,9 +1019,7 @@ select:focus-visible {
   background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
 
-/* ========================================
-   DARK MODE SUPPORT (Optional)
-   ======================================== */
+
 
 @media (prefers-color-scheme: dark) {
   .boards-container {

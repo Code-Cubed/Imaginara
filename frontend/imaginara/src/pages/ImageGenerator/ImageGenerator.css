@@ -1,4 +1,3 @@
-/* pages/ImageGenerator/ImageGenerator.css */
 
 .image-generator-container {
   min-height: 100vh;
@@ -33,9 +32,7 @@
   50% { transform: translateY(-10px); }
 }
 
-/* ==============================
-   SEXY HEADER STYLING 💫
-   ============================== */
+
 
 .header-title {
   font-size: 3rem; /* 48px */
@@ -63,9 +60,7 @@
   animation-delay: 0.6s;
 }
 
-/* ==============================
-   ANIMATIONS ✨
-   ============================== */
+
 
 @keyframes fadeInSlide {
   0% {
