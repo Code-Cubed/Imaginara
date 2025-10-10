@@ -77,7 +77,7 @@ const ChatBot = ({ onLogout }) => {
               <span className="header-icon">💬</span>
               Imaginara AI Assistant
             </h1>
-            <p className="header-subtitle">
+            <p className="header-subtitle1">
               Ask me anything about art, creativity, or your artworks!
             </p>
           </div>
