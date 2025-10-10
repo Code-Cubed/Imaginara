@@ -63,23 +63,6 @@ app.use(passport.session());
 // ======================
 connectDB();
 
-// ======================
-// 🔹 Create HTTP Server + Socket.IO
-// ======================
-const server = http.createServer(app);
-
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:5173",
-    methods: ["GET", "POST"]
-  },
-});
-
-// ⚠️ IMPORTANT: Make io accessible in routes
-app.use((req, res, next) => {
-  req.io = io;
-  next();
-});
 
 // ======================
 // 🔹 API Routes
