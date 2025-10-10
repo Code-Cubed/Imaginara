@@ -165,10 +165,12 @@
   margin-top: 0.5rem;
 }
 
-
+/* ========================================
+   BUTTONS
+   ======================================== */
 
 .btn {
-  padding: 1rem 2rem; /* reduced padding for better layout */
+  padding: 0.75rem 1.5rem;
   border: none;
   border-radius: 25px;
   font-weight: 600;
@@ -189,16 +191,15 @@
   left: 50%;
   width: 0;
   height: 0;
-  border-radius: 50%; /* circular ripple */
+  border-radius: 50%;
   background: rgba(255, 255, 255, 0.3);
   transform: translate(-50%, -50%);
-  transition: width 0.4s ease, height 0.4s ease;
-  pointer-events: none;
+  transition: width 0.6s, height 0.6s;
 }
 
 .btn:hover::before {
-  width: 200%;  /* expand relative to button size */
-  height: 200%;
+  width: 300px;
+  height: 300px;
 }
 
 .btn > * {
@@ -232,7 +233,6 @@
   transform: translateY(-2px);
   box-shadow: 0 8px 30px rgba(245, 87, 108, 0.5);
 }
-
 
 /* ========================================
    MODAL STYLES
@@ -1047,3 +1047,48 @@ select:focus-visible {
   background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
 
+/* ========================================
+   DARK MODE SUPPORT (Optional)
+   ======================================== */
+
+@media (prefers-color-scheme: dark) {
+  .boards-container {
+    background: rgba(30, 30, 30, 0.95);
+    color: #e0e0e0;
+  }
+  
+  .boards-subtitle {
+    color: #b0b0b0;
+  }
+  
+  .board-card,
+  .personal-room-card,
+  .modal-content {
+    background: #2a2a2a;
+  }
+  
+  .board-title,
+  .room-info h3 {
+    color: #e0e0e0;
+  }
+  
+  .board-description,
+  .last-message,
+  .board-creator,
+  .board-stats span {
+    color: #b0b0b0;
+  }
+  
+  .board-meta {
+    border-top-color: #444;
+  }
+  
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    background: #1a1a1a;
+    border-color: #444;
+    color: #e0e0e0;
+  }
+  
+}

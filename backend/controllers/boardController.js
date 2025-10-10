@@ -4,8 +4,6 @@ const User = require('../models/User');
 const ChatMessage = require('../models/ChatMessage');
 const PersonalRoom = require('../models/PersonalRoom');
 
-
-
 // Join board as member
 exports.joinBoard = async (req, res) => {
   try {
@@ -35,10 +33,10 @@ exports.joinBoard = async (req, res) => {
       populate: { path: 'creator', select: 'name avatar' }
     });
 
-    // Emit socket event
+    // FIXED: Emit socket event without prefix
     const io = req.app.get('io');
     if (io) {
-      io.to(`board-${board._id}`).emit('member-joined', {
+      io.to(board._id.toString()).emit('member-joined', {
         boardId: board._id,
         user: req.user,
         membersCount: board.members.length
@@ -68,7 +66,7 @@ exports.leaveBoard = async (req, res) => {
       return res.status(400).json({ message: 'Not a member of this board' });
     }
 
-    // Cannot leave if you're the creator (or handle differently)
+    // Cannot leave if you're the creator
     if (board.creator.toString() === req.user._id.toString()) {
       return res.status(400).json({ message: 'Creator cannot leave the board. Transfer ownership or delete the board instead.' });
     }
@@ -81,10 +79,10 @@ exports.leaveBoard = async (req, res) => {
     
     await board.save();
 
-    // Emit socket event
+    // FIXED: Emit socket event without prefix
     const io = req.app.get('io');
     if (io) {
-      io.to(`board-${board._id}`).emit('member-left', {
+      io.to(board._id.toString()).emit('member-left', {
         boardId: board._id,
         userId: req.user._id,
         membersCount: board.members.length
@@ -171,10 +169,10 @@ exports.addArtworkToBoard = async (req, res) => {
       populate: { path: 'creator', select: 'name avatar' }
     });
 
-    // Emit socket event
+    // FIXED: Emit socket event without prefix
     const io = req.app.get('io');
     if (io) {
-      io.to(`board-${req.params.id}`).emit('artwork-added', {
+      io.to(req.params.id).emit('artwork-added', {
         boardId: req.params.id,
         artwork: board.artworks[board.artworks.length - 1]
       });
@@ -280,7 +278,7 @@ exports.updateBoard = async (req, res) => {
 
     if (title) board.title = title;
     if (description !== undefined) board.description = description;
-    if (visibility && isCreator) board.visibility = visibility; // Only creator can change visibility
+    if (visibility && isCreator) board.visibility = visibility;
     if (tags) board.tags = tags.split(',').map(t => t.trim());
     if (category) board.category = category;
     if (settings && isCreator) board.settings = { ...board.settings, ...settings };
@@ -407,6 +405,7 @@ exports.getBoardChatMessages = async (req, res) => {
   }
 };
 
+// FIXED: Send chat message with proper Socket.IO emit
 exports.sendChatMessage = async (req, res) => {
   try {
     const { message } = req.body;
@@ -436,10 +435,24 @@ exports.sendChatMessage = async (req, res) => {
     await chatMessage.save();
     await chatMessage.populate('user', 'name avatar');
 
-    // Emit socket event
+    // CRITICAL FIX: Emit to boardId directly (no prefix)
     const io = req.app.get('io');
     if (io) {
-      io.to(`board-${boardId}`).emit('new-chat-message', chatMessage);
+      io.to(boardId).emit('new-chat-message', {
+        _id: chatMessage._id,
+        message: chatMessage.message,
+        user: {
+          _id: chatMessage.user._id,
+          name: chatMessage.user.name,
+          avatar: chatMessage.user.avatar
+        },
+        board: chatMessage.board,
+        createdAt: chatMessage.createdAt,
+        type: chatMessage.type
+      });
+      console.log(`💬 Message emitted to board ${boardId} by ${chatMessage.user.name}`);
+    } else {
+      console.warn('⚠️ Socket.IO instance not available');
     }
 
     res.status(201).json(chatMessage);
@@ -459,7 +472,6 @@ exports.createPersonalRoom = async (req, res) => {
       return res.status(400).json({ message: 'Other user ID is required' });
     }
     
-    // Ensure IDs are strings for comparison
     if (String(currentUserId) === String(otherUserId)) {
       return res.status(400).json({ message: 'Cannot create room with yourself' });
     }
@@ -541,7 +553,6 @@ exports.sendPersonalRoomMessage = async (req, res) => {
       return res.status(400).json({ message: 'Message cannot be empty' });
     }
 
-    // Check if the current user is a participant of the room
     const room = await PersonalRoom.findOne({
       roomId: roomId,
       participants: req.user._id
@@ -561,7 +572,6 @@ exports.sendPersonalRoomMessage = async (req, res) => {
     await chatMessage.save();
     await chatMessage.populate('user', 'name avatar');
 
-    // Update the last message reference and updatedAt timestamp
     room.lastMessage = chatMessage._id;
     room.updatedAt = new Date();
     await room.save();
@@ -569,7 +579,7 @@ exports.sendPersonalRoomMessage = async (req, res) => {
     // Emit socket event
     const io = req.app.get('io');
     if (io) {
-        io.to(`room-${roomId}`).emit('new-personal-message', chatMessage);
+      io.to(`room-${roomId}`).emit('new-personal-message', chatMessage);
     }
 
     res.status(201).json(chatMessage);

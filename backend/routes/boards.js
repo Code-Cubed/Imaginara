@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middlewares/auth');
 const boardController = require('../controllers/boardController');
-const Board = require('../models/Board'); // ADD THIS IMPORT
+const Board = require('../models/Board');
 
 // ========== NEW: Member joining routes ==========
 router.post('/:id/join', auth, boardController.joinBoard);
@@ -26,7 +26,6 @@ router.get('/:id/chat', boardController.getBoardChatMessages);
 router.post('/:id/chat', auth, boardController.sendChatMessage);
 
 // ========== Artwork management - FIXED ==========
-// Use the route path that matches your frontend call
 router.post('/:id/add-artwork', auth, async (req, res) => {
   try {
     const { artworkIds, note } = req.body;
@@ -76,13 +75,14 @@ router.post('/:id/add-artwork', auth, async (req, res) => {
         populate: { path: 'creator', select: 'name avatar' }
       });
 
-      // Emit socket event
+      // FIXED: Emit socket event without prefix (matching frontend)
       const io = req.app.get('io');
       if (io) {
-        io.to(`board-${req.params.id}`).emit('artwork-added', {
+        io.to(req.params.id).emit('artwork-added', {
           boardId: req.params.id,
           addedCount: addedCount
         });
+        console.log(`🎨 Artwork-added event emitted to board ${req.params.id}`);
       }
     }
 

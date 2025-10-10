@@ -90,40 +90,104 @@ const BoardDetailPage = ({ onLogout }) => {
     fetchBoard();
     fetchMessages();
 
-    const newSocket = io('http://localhost:8000');
+    // Initialize Socket.IO connection
+    const newSocket = io('http://localhost:8000', {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5
+    });
+    
     setSocket(newSocket);
-    newSocket.emit('join-board', id);
 
+    // Connection event handlers
+    newSocket.on('connect', () => {
+      console.log('Socket connected:', newSocket.id);
+      newSocket.emit('join-board', id);
+    });
+
+    newSocket.on('disconnect', () => {
+      console.log('Socket disconnected');
+    });
+
+    newSocket.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
+    });
+
+    // Chat message handler - CRITICAL FIX
     newSocket.on('new-chat-message', (message) => {
+      console.log('Received new message:', message);
       setMessages((prev) => {
+        // Check if message already exists
         const exists = prev.some(msg => msg._id === message._id);
         if (exists) return prev;
-        return [...prev, message];
+        
+        // Add new message
+        const updated = [...prev, message];
+        return updated;
       });
+      
+      // Scroll to bottom after state update
       setTimeout(scrollToBottom, 100);
     });
 
-    newSocket.on('user-joined-board', () => setOnlineUsers((prev) => prev + 1));
-    newSocket.on('user-left-board', () => setOnlineUsers((prev) => Math.max(0, prev - 1)));
-    newSocket.on('member-joined', () => { setOnlineUsers((prev) => prev + 1); fetchBoard(); });
-    newSocket.on('member-left', () => { setOnlineUsers((prev) => Math.max(0, prev - 1)); fetchBoard(); });
+    // User presence handlers
+    newSocket.on('user-joined-board', (data) => {
+      console.log('User joined:', data);
+      setOnlineUsers((prev) => prev + 1);
+    });
 
-    newSocket.on('artwork-added', () => fetchBoard());
+    newSocket.on('user-left-board', (data) => {
+      console.log('User left:', data);
+      setOnlineUsers((prev) => Math.max(0, prev - 1));
+    });
 
-    newSocket.on('user-typing', (data) => setTypingUsers((prev) => new Set([...prev, data.userName])));
+    newSocket.on('member-joined', () => {
+      setOnlineUsers((prev) => prev + 1);
+      fetchBoard();
+    });
+
+    newSocket.on('member-left', () => {
+      setOnlineUsers((prev) => Math.max(0, prev - 1));
+      fetchBoard();
+    });
+
+    newSocket.on('artwork-added', () => {
+      fetchBoard();
+    });
+
+    // Typing indicator handlers - FIXED
+    newSocket.on('user-typing', (data) => {
+      console.log('User typing:', data);
+      // Don't show typing indicator for current user
+      if (data.userId !== currentUserId) {
+        setTypingUsers((prev) => new Set([...prev, data.userName]));
+      }
+    });
+
     newSocket.on('user-stopped-typing', (data) => {
-      setTypingUsers((prev) => { 
-        const newSet = new Set(prev); 
-        newSet.delete(data.userName); 
-        return newSet; 
+      console.log('User stopped typing:', data);
+      setTypingUsers((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(data.userName);
+        return newSet;
       });
     });
 
+    // Cleanup on unmount
     return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
       newSocket.emit('leave-board', id);
       newSocket.close();
     };
-  }, [id]);
+  }, [id, currentUserId]);
+
+  // Auto-scroll when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const fetchBoard = async () => {
     try {
@@ -149,15 +213,20 @@ const BoardDetailPage = ({ onLogout }) => {
     try {
       const response = await fetch(`http://localhost:8000/api/boards/${id}/chat`);
       const data = await response.json();
-      if (response.ok) { 
-        setMessages(data); 
-        setTimeout(scrollToBottom, 100); 
+      if (response.ok) {
+        setMessages(data);
+        setTimeout(scrollToBottom, 100);
       }
-    } catch (err) { console.error('Failed to fetch messages:', err); }
+    } catch (err) {
+      console.error('Failed to fetch messages:', err);
+    }
   };
 
   const fetchMyArtworks = async () => {
-    if (!currentUserId) { setMyArtworks([]); return; }
+    if (!currentUserId) {
+      setMyArtworks([]);
+      return;
+    }
     setLoadingArtworks(true);
     try {
       const token = localStorage.getItem('token');
@@ -168,8 +237,8 @@ const BoardDetailPage = ({ onLogout }) => {
       const data = await response.json();
 
       let artworksArray = Array.isArray(data) ? data : Array.isArray(data.artworks) ? data.artworks : data.data || [];
-      
-      // FILTER: Only artworks not yet added to this board
+
+      // Filter: Only artworks not yet added to this board
       const boardArtworkIds = board?.artworks?.map(item => item.artwork._id) || [];
       artworksArray = artworksArray.filter(art => !boardArtworkIds.includes(art._id));
 
@@ -183,9 +252,16 @@ const BoardDetailPage = ({ onLogout }) => {
   };
 
   const handleOpenAddArtworkModal = async () => {
-    if (!currentUserId) { alert('Please login to add artwork'); navigate('/login'); return; }
-    if (!isMember) { alert('Please join the board first to add artwork'); return; }
-    
+    if (!currentUserId) {
+      alert('Please login to add artwork');
+      navigate('/login');
+      return;
+    }
+    if (!isMember) {
+      alert('Please join the board first to add artwork');
+      return;
+    }
+
     await fetchBoard();
     await fetchMyArtworks();
     setSelectedArtworks([]);
@@ -193,7 +269,10 @@ const BoardDetailPage = ({ onLogout }) => {
   };
 
   const handleAddArtwork = async () => {
-    if (selectedArtworks.length === 0) { alert("Select at least one artwork"); return; }
+    if (selectedArtworks.length === 0) {
+      alert("Select at least one artwork");
+      return;
+    }
 
     try {
       const token = localStorage.getItem('token');
@@ -203,7 +282,7 @@ const BoardDetailPage = ({ onLogout }) => {
         body: JSON.stringify({ artworkIds: selectedArtworks }),
       });
       const data = await response.json();
-      
+
       if (response.ok) {
         alert(`${data.addedCount || selectedArtworks.length} artwork(s) added successfully`);
         await fetchBoard();
@@ -219,31 +298,64 @@ const BoardDetailPage = ({ onLogout }) => {
   };
 
   const handleJoinBoard = async () => {
-    if (!currentUserId) { alert('Please login to join the board'); navigate('/login'); return; }
+    if (!currentUserId) {
+      alert('Please login to join the board');
+      navigate('/login');
+      return;
+    }
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8000/api/boards/${id}/join`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      const response = await fetch(`http://localhost:8000/api/boards/${id}/join`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const data = await response.json();
-      if (response.ok) { setIsMember(true); setBoard(data.board); alert('Successfully joined the board!'); }
-      else alert(data.message);
-    } catch (err) { console.error(err); alert('Failed to join board'); }
+      if (response.ok) {
+        setIsMember(true);
+        setBoard(data.board);
+        alert('Successfully joined the board!');
+      } else {
+        alert(data.message);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to join board');
+    }
   };
 
   const handleLeaveBoard = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8000/api/boards/${id}/leave`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+      const response = await fetch(`http://localhost:8000/api/boards/${id}/leave`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const data = await response.json();
-      if (response.ok) { setIsMember(false); alert('Left the board'); fetchBoard(); }
-      else alert(data.message);
-    } catch (err) { console.error(err); alert('Failed to leave board'); }
+      if (response.ok) {
+        setIsMember(false);
+        alert('Left the board');
+        fetchBoard();
+      } else {
+        alert(data.message);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to leave board');
+    }
   };
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
-    if (!currentUserId) { alert('Please login to chat'); navigate('/login'); return; }
-    if (!isMember) { alert('Please join the board to participate in chat'); return; }
+    if (!currentUserId) {
+      alert('Please login to chat');
+      navigate('/login');
+      return;
+    }
+    if (!isMember) {
+      alert('Please join the board to participate in chat');
+      return;
+    }
 
     const messageText = newMessage.trim();
     setNewMessage('');
@@ -257,20 +369,17 @@ const BoardDetailPage = ({ onLogout }) => {
         body: JSON.stringify({ message: messageText })
       });
 
-      if (response.ok) {
-        const sentMessage = await response.json();
-        setMessages((prev) => {
-          const exists = prev.some(msg => msg._id === sentMessage._id);
-          if (exists) return prev;
-          return [...prev, sentMessage];
-        });
-        setTimeout(scrollToBottom, 100);
-      } else { 
-        const errorData = await response.json(); 
+      if (!response.ok) {
+        const errorData = await response.json();
         alert(errorData.message || 'Failed to send message');
-        setNewMessage(messageText); 
+        setNewMessage(messageText);
       }
-    } catch (err) { console.error(err); alert('Failed to send message'); setNewMessage(messageText); }
+      // Don't manually add message here - let Socket.IO handle it
+    } catch (err) {
+      console.error(err);
+      alert('Failed to send message');
+      setNewMessage(messageText);
+    }
   };
 
   const getUniqueUsers = () => {
@@ -335,9 +444,9 @@ const BoardDetailPage = ({ onLogout }) => {
             </div>
 
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button 
-                onClick={() => setShowUsersList(!showUsersList)} 
-                className="toggle-chat-btn" 
+              <button
+                onClick={() => setShowUsersList(!showUsersList)}
+                className="toggle-chat-btn"
                 disabled={!isMember && board.creator._id !== currentUserId}
               >
                 <UserPlus size={20} /> Create Room
@@ -346,16 +455,12 @@ const BoardDetailPage = ({ onLogout }) => {
               <button onClick={() => setShowChat(!showChat)} className="toggle-chat-btn">
                 <MessageCircle size={20} /> {showChat ? 'Hide Chat' : 'Show Chat'}
               </button>
-
-              
-
             </div>
           </div>
-           <button className="btn btn-primary" onClick={handleOpenAddArtworkModal}>
-                      Add Your Artwork
-                    </button>
 
-              
+          <button className="btn btn-primary" onClick={handleOpenAddArtworkModal}>
+            Add Your Artwork
+          </button>
 
           {/* Users List Modal */}
           {showUsersList && (
@@ -372,12 +477,12 @@ const BoardDetailPage = ({ onLogout }) => {
                 ) : (
                   <div className="users-list">
                     {uniqueUsers.map((user) => (
-                      <div 
-                        key={user._id} 
-                        className="user-item" 
-                        onClick={() => { 
-                          handleCreatePersonalRoom(user._id); 
-                          setShowUsersList(false); 
+                      <div
+                        key={user._id}
+                        className="user-item"
+                        onClick={() => {
+                          handleCreatePersonalRoom(user._id);
+                          setShowUsersList(false);
                         }}
                       >
                         <div className="user-avatar">
@@ -401,12 +506,12 @@ const BoardDetailPage = ({ onLogout }) => {
             </div>
           )}
 
-          {/* FIXED: Add Artwork Modal */}
+          {/* Add Artwork Modal */}
           {showAddArtworkModal && (
             <div className="modal-overlay" onClick={() => setShowAddArtworkModal(false)}>
               <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <h2>Select Artwork to Add</h2>
-                
+
                 {loadingArtworks ? (
                   <div style={{ textAlign: 'center', padding: '40px' }}>
                     <div className="loading-spinner"></div>
@@ -415,8 +520,8 @@ const BoardDetailPage = ({ onLogout }) => {
                 ) : myArtworks.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '40px' }}>
                     <p style={{ marginBottom: '16px' }}>You have no uploaded artworks</p>
-                    <button 
-                      className="btn btn-primary" 
+                    <button
+                      className="btn btn-primary"
                       onClick={() => navigate('/addartwork')}
                     >
                       Upload Artwork
@@ -431,15 +536,15 @@ const BoardDetailPage = ({ onLogout }) => {
                           className={`artwork-item ${selectedArtworks.includes(art._id) ? 'selected' : ''}`}
                           onClick={() => {
                             setSelectedArtworks((prev) =>
-                              prev.includes(art._id) 
-                                ? prev.filter((id) => id !== art._id) 
+                              prev.includes(art._id)
+                                ? prev.filter((id) => id !== art._id)
                                 : [...prev, art._id]
                             );
                           }}
                         >
-                          <img 
-                            src={art.thumbnailUrl || art.mediaUrl} 
-                            alt={art.title} 
+                          <img
+                            src={art.thumbnailUrl || art.mediaUrl}
+                            alt={art.title}
                           />
                           <p>{art.title}</p>
                           {selectedArtworks.includes(art._id) && (
@@ -448,7 +553,7 @@ const BoardDetailPage = ({ onLogout }) => {
                         </div>
                       ))}
                     </div>
-                    
+
                     <div className="modal-actions">
                       <button
                         className="btn btn-primary"
@@ -457,8 +562,8 @@ const BoardDetailPage = ({ onLogout }) => {
                       >
                         Add Selected ({selectedArtworks.length})
                       </button>
-                      <button 
-                        className="btn btn-secondary" 
+                      <button
+                        className="btn btn-secondary"
                         onClick={() => {
                           setShowAddArtworkModal(false);
                           setSelectedArtworks([]);
@@ -502,24 +607,24 @@ const BoardDetailPage = ({ onLogout }) => {
               {board.artworks && board.artworks.length > 0 ? (
                 <div className="board-artworks-grid">
                   {board.artworks.map((item) => (
-                    <div 
-                      key={item._id} 
-                      className="board-artwork-card" 
+                    <div
+                      key={item._id}
+                      className="board-artwork-card"
                       onClick={() => handleArtworkClick(item.artwork._id)}
                     >
                       <div className="board-artwork-image">
                         {item.artwork.mediaType === 'image' ? (
-                          <img 
-                            src={item.artwork.thumbnailUrl || item.artwork.mediaUrl} 
-                            alt={item.artwork.title} 
-                            onError={(e) => { 
-                              e.target.style.display = 'none'; 
-                              e.target.nextSibling.style.display = 'flex'; 
-                            }} 
+                          <img
+                            src={item.artwork.thumbnailUrl || item.artwork.mediaUrl}
+                            alt={item.artwork.title}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
                           />
                         ) : null}
-                        <div 
-                          className="board-artwork-placeholder" 
+                        <div
+                          className="board-artwork-placeholder"
                           style={{ display: item.artwork.mediaType === 'image' ? 'none' : 'flex' }}
                         >
                           {item.artwork.mediaType === 'audio' ? '🎵' : '📄'}
@@ -568,8 +673,8 @@ const BoardDetailPage = ({ onLogout }) => {
                     </div>
                   ) : (
                     messages.map((msg) => (
-                      <div 
-                        key={msg._id} 
+                      <div
+                        key={msg._id}
                         className={`chat-message ${msg.user._id === currentUserId ? 'own-message' : ''}`}
                       >
                         <div className="message-avatar">
@@ -585,9 +690,9 @@ const BoardDetailPage = ({ onLogout }) => {
                           <div className="message-header">
                             <span className="message-author">{msg.user.name}</span>
                             <span className="message-time">
-                              {new Date(msg.createdAt).toLocaleTimeString('en-US', { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
+                              {new Date(msg.createdAt).toLocaleTimeString('en-US', {
+                                hour: '2-digit',
+                                minute: '2-digit'
                               })}
                             </span>
                           </div>
@@ -607,24 +712,24 @@ const BoardDetailPage = ({ onLogout }) => {
                   <input
                     type="text"
                     value={newMessage}
-                    onChange={(e) => { 
-                      setNewMessage(e.target.value); 
-                      handleTyping(); 
+                    onChange={(e) => {
+                      setNewMessage(e.target.value);
+                      handleTyping();
                     }}
                     onBlur={handleStopTyping}
                     placeholder={
-                      !currentUserId 
-                        ? "Please login to chat" 
-                        : !isMember 
-                        ? "Join the board to chat" 
+                      !currentUserId
+                        ? "Please login to chat"
+                        : !isMember
+                        ? "Join the board to chat"
                         : "Type a message..."
                     }
                     className="chat-input"
                     disabled={!currentUserId || !isMember}
                   />
-                  <button 
-                    type="submit" 
-                    className="send-btn" 
+                  <button
+                    type="submit"
+                    className="send-btn"
                     disabled={!newMessage.trim() || !currentUserId || !isMember}
                   >
                     <Send size={20} />

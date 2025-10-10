@@ -23,9 +23,9 @@ const boardRoutes = require('./routes/boards');
 const collectionRoutes = require('./routes/collections');
 
 // ✅ AI Routes
-const aiRoute = require('./routes/aiRoute');              // Tag generation
-const geminiRoute = require('./routes/geminiRoute');      // Chatbot
-const imageGenerationRoute = require('./routes/imageGeneration'); // ✅ NEW - Image Generator
+const aiRoute = require('./routes/aiRoute');
+const geminiRoute = require('./routes/geminiRoute');
+const imageGenerationRoute = require('./routes/imageGeneration');
 
 const app = express();
 require('./config/passport');
@@ -63,26 +63,6 @@ app.use(passport.session());
 // ======================
 connectDB();
 
-
-// ======================
-// 🔹 API Routes
-// ======================
-app.use('/api/auth', authRoutes);
-app.use('/api/artworks', artworkRoutes);
-app.use('/api/comments', commentRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/follow', followRoutes);
-app.use('/api/contact', contactRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/similarity', similarityRoutes);
-app.use('/api/boards', boardRoutes);
-app.use('/api/collections', collectionRoutes);
-
-// ✅ AI Routes
-app.use('/api/ai', aiRoute);                              // Tag generation
-app.use('/api/gemini', geminiRoute);                      // Chatbot
-app.use('/api/image-generation', imageGenerationRoute);  // ✅ NEW - Image Generator
-
 // ======================
 // 🔹 Create HTTP Server + Socket.IO
 // ======================
@@ -90,17 +70,23 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || '*',
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"],
+    credentials: true,
   },
+  transports: ['websocket', 'polling']
 });
 
+// Make io accessible to routes
 app.set('io', io);
 
 // ======================
 // 🔹 Socket.IO Events
 // ======================
+const boardUsers = new Map(); // Track users per board
+
 io.on('connection', (socket) => {
-  console.log('Socket connected:', socket.id);
+  console.log('✅ Socket connected:', socket.id);
 
   // ========== Existing User Events ==========
   socket.on('join-user', (userId) => {
@@ -129,33 +115,66 @@ io.on('connection', (socket) => {
     io.to(data.artworkId).emit('like-updated', { likes: data.likes });
   });
 
-  // ========== NEW: Board Events ==========
+  // ========== FIXED: Board Events ==========
   socket.on('join-board', (boardId) => {
-    socket.join(`board-${boardId}`);
-    socket.to(`board-${boardId}`).emit('user-joined-board');
-    console.log(`User ${socket.id} joined board ${boardId}`);
+    // Use boardId directly (no prefix) to match frontend
+    socket.join(boardId);
+    
+    // Track user in board
+    if (!boardUsers.has(boardId)) {
+      boardUsers.set(boardId, new Set());
+    }
+    boardUsers.get(boardId).add(socket.id);
+    
+    console.log(`✅ Socket ${socket.id} joined board ${boardId}`);
+    console.log(`📊 Board ${boardId} now has ${boardUsers.get(boardId).size} users`);
+    
+    // Notify others in the board
+    socket.to(boardId).emit('user-joined-board', {
+      socketId: socket.id,
+      timestamp: new Date()
+    });
   });
 
   socket.on('leave-board', (boardId) => {
-    socket.leave(`board-${boardId}`);
-    socket.to(`board-${boardId}`).emit('user-left-board');
-    console.log(`User ${socket.id} left board ${boardId}`);
+    socket.leave(boardId);
+    
+    // Remove from tracking
+    if (boardUsers.has(boardId)) {
+      boardUsers.get(boardId).delete(socket.id);
+      if (boardUsers.get(boardId).size === 0) {
+        boardUsers.delete(boardId);
+      }
+    }
+    
+    console.log(`❌ Socket ${socket.id} left board ${boardId}`);
+    
+    // Notify others
+    socket.to(boardId).emit('user-left-board', {
+      socketId: socket.id,
+      timestamp: new Date()
+    });
   });
 
   socket.on('typing-board', (data) => {
-    socket.to(`board-${data.boardId}`).emit('user-typing', {
+    console.log(`⌨️ ${data.userName} typing in board ${data.boardId}`);
+    // Broadcast to others in the room (excluding sender)
+    socket.to(data.boardId).emit('user-typing', {
       userId: data.userId,
-      userName: data.userName
+      userName: data.userName,
+      timestamp: new Date()
     });
   });
 
   socket.on('stop-typing-board', (data) => {
-    socket.to(`board-${data.boardId}`).emit('user-stopped-typing', {
-      userId: data.userId
+    console.log(`⏹️ User ${data.userId} stopped typing in board ${data.boardId}`);
+    socket.to(data.boardId).emit('user-stopped-typing', {
+      userId: data.userId,
+      timestamp: new Date()
     });
   });
 
-  // ========== NEW: Personal Room Events ==========
+  // ========== Personal Room Events ==========
   socket.on('join-personal-room', (roomId) => {
     socket.join(`room-${roomId}`);
     console.log(`User ${socket.id} joined personal room ${roomId}`);
@@ -179,10 +198,45 @@ io.on('connection', (socket) => {
     });
   });
 
+  // ========== Disconnect Event ==========
   socket.on('disconnect', () => {
-    console.log('Socket disconnected:', socket.id);
+    console.log('❌ Socket disconnected:', socket.id);
+    
+    // Remove from all boards
+    boardUsers.forEach((users, boardId) => {
+      if (users.has(socket.id)) {
+        users.delete(socket.id);
+        socket.to(boardId).emit('user-left-board', {
+          socketId: socket.id,
+          timestamp: new Date()
+        });
+        
+        if (users.size === 0) {
+          boardUsers.delete(boardId);
+        }
+      }
+    });
   });
 });
+
+// ======================
+// 🔹 API Routes
+// ======================
+app.use('/api/auth', authRoutes);
+app.use('/api/artworks', artworkRoutes);
+app.use('/api/comments', commentRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/follow', followRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/similarity', similarityRoutes);
+app.use('/api/boards', boardRoutes);
+app.use('/api/collections', collectionRoutes);
+
+// ✅ AI Routes
+app.use('/api/ai', aiRoute);
+app.use('/api/gemini', geminiRoute);
+app.use('/api/image-generation', imageGenerationRoute);
 
 // ======================
 // 🔹 Health Check Route
