@@ -25,7 +25,7 @@
   height: 48px;
   border-radius: 50%;
   overflow: hidden;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #7a8cde 0%, #b54a93 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -46,7 +46,7 @@
 
 .room-subtitle {
   font-size: 14px;
-  color: #6b7280;
+  color: #131113;
   margin: 4px 0 0 0;
 }
 
@@ -105,7 +105,7 @@
 }
 
 .personal-message.own-message .message-content {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #7e89bd 0%, #936abc 100%);
   color: white;
 }
 
@@ -231,7 +231,7 @@
 
 .personal-room-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(193, 102, 102, 0.1);
   border-color: #667eea;
 }
 

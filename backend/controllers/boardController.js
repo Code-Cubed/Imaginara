@@ -1,149 +1,114 @@
-// controllers/boardController.js
 const Board = require('../models/Board');
 const Artwork = require('../models/Artwork');
 const User = require('../models/User');
 const ChatMessage = require('../models/ChatMessage');
 const PersonalRoom = require('../models/PersonalRoom');
-// Create a new board
 
-exports.autoCreateBoards = async (req, res) => {
+
+
+// Join board as member
+exports.joinBoard = async (req, res) => {
   try {
-    // 🎯 CRITICAL FIX: Filter artworks by the authenticated user's ID
-    const currentUserId = req.user._id; 
+    const board = await Board.findById(req.params.id);
     
-    // Find only the artworks created by the current user
-    const artworks = await Artwork.find({ creator: currentUserId }).populate('creator', 'name avatar');
-    
-    if (artworks.length === 0) {
-      return res.status(400).json({ 
-        message: 'No artworks found for this user to create boards' 
-      });
+    if (!board) {
+      return res.status(404).json({ message: 'Board not found' });
     }
 
-    const groupedByTitle = artworks.reduce((acc, artwork) => {
-      // Ensure title is a string before calling trim
-      const title = String(artwork.title).trim(); 
-      if (!acc[title]) {
-        acc[title] = [];
-      }
-      acc[title].push(artwork);
-      return acc;
-    }, {});
-
-    const createdBoards = [];
-    for (const [title, artworksGroup] of Object.entries(groupedByTitle)) {
-      // Check for existing board with the same title to avoid duplicates
-      const existingBoard = await Board.findOne({ title: title });
-      
-      if (!existingBoard) {
-        const firstArtwork = artworksGroup[0];
-        
-        const newBoard = new Board({
-          title: title,
-          description: `A collaborative collection of "${title}" artworks`,
-          creator: currentUserId, // Use the authenticated user's ID as the board creator
-          visibility: 'public',
-          category: firstArtwork.category || 'General',
-          artworks: artworksGroup.map(art => ({
-            artwork: art._id,
-            addedBy: art.creator._id,
-            addedAt: new Date()
-          })),
-          coverImage: firstArtwork.thumbnailUrl || firstArtwork.mediaUrl,
-          tags: firstArtwork.tags || []
-        });
-
-        await newBoard.save();
-        createdBoards.push(newBoard);
-      }
+    // Check if board allows member joining
+    if (board.visibility === 'private' && !board.settings.allowMemberInvites) {
+      return res.status(403).json({ message: 'This board is private' });
     }
 
-    res.status(201).json({
-      message: `${createdBoards.length} new boards created successfully`,
-      boards: createdBoards
+    // Check if already a member
+    if (board.isMember(req.user._id)) {
+      return res.status(400).json({ message: 'Already a member of this board' });
+    }
+
+    // Add user as member
+    board.addMember(req.user._id, 'member');
+    await board.save();
+
+    await board.populate('members.user', 'name avatar');
+    await board.populate({
+      path: 'artworks.artwork',
+      populate: { path: 'creator', select: 'name avatar' }
     });
-  } catch (error) {
-    console.error('Auto-create boards error:', error);
-    // Include user ID in error logging for context
-    console.error('User ID involved in error:', req.user ? req.user._id : 'N/A'); 
-    res.status(500).json({ message: 'Server error during board creation', error: error.message });
-  }
-};
-
-exports.createBoard = async (req, res) => {
-  try {
-    const { title, description, visibility, tags, category } = req.body;
-
-    const board = await Board.create({
-      title,
-      description,
-      creator: req.user._id,
-      visibility: visibility || 'public',
-      tags: tags ? tags.split(',').map(t => t.trim()) : [],
-      category
-    });
-
-    await board.populate('creator', 'name avatar');
 
     // Emit socket event
     const io = req.app.get('io');
     if (io) {
-      io.emit('board-created', {
-        board,
-        userId: req.user._id.toString()
+      io.to(`board-${board._id}`).emit('member-joined', {
+        boardId: board._id,
+        user: req.user,
+        membersCount: board.members.length
       });
     }
 
-    res.status(201).json(board);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// Get all boards (with filters)
-exports.getAllBoards = async (req, res) => {
-  try {
-    const { page = 1, limit = 20, visibility, category, userId } = req.query;
-    
-    const filter = {};
-    if (visibility) filter.visibility = visibility;
-    if (category) filter.category = category;
-    if (userId) filter.creator = userId;
-    
-    // Only show public boards unless user is creator/collaborator
-    if (!userId) {
-      filter.visibility = 'public';
-    }
-
-    const boards = await Board.find(filter)
-      .populate('creator', 'name avatar')
-      .populate('collaborators.user', 'name avatar')
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
-
-    const total = await Board.countDocuments(filter);
-
     res.json({
-      boards,
-      total,
-      page: parseInt(page),
-      pages: Math.ceil(total / limit)
+      message: 'Successfully joined the board',
+      board: board
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// Get single board
+// Leave board
+exports.leaveBoard = async (req, res) => {
+  try {
+    const board = await Board.findById(req.params.id);
+    
+    if (!board) {
+      return res.status(404).json({ message: 'Board not found' });
+    }
+
+    // Check if user is a member
+    if (!board.isMember(req.user._id)) {
+      return res.status(400).json({ message: 'Not a member of this board' });
+    }
+
+    // Cannot leave if you're the creator (or handle differently)
+    if (board.creator.toString() === req.user._id.toString()) {
+      return res.status(400).json({ message: 'Creator cannot leave the board. Transfer ownership or delete the board instead.' });
+    }
+
+    // Remove user from members
+    board.members = board.members.filter(member => 
+      member.user.toString() !== req.user._id.toString()
+    );
+    board.stats.totalMembers = Math.max(0, board.stats.totalMembers - 1);
+    
+    await board.save();
+
+    // Emit socket event
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`board-${board._id}`).emit('member-left', {
+        boardId: board._id,
+        userId: req.user._id,
+        membersCount: board.members.length
+      });
+    }
+
+    res.json({ message: 'Successfully left the board' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Get single board with all artworks and members
 exports.getBoard = async (req, res) => {
   try {
     const board = await Board.findById(req.params.id)
       .populate('creator', 'name avatar')
-      .populate('collaborators', 'name avatar')
+      .populate('members.user', 'name avatar')
       .populate({
         path: 'artworks.artwork',
-        populate: { path: 'creator', select: 'name avatar' }
+        populate: { 
+          path: 'creator', 
+          select: 'name avatar' 
+        }
       });
 
     if (!board) {
@@ -161,6 +126,137 @@ exports.getBoard = async (req, res) => {
   }
 };
 
+// Add artwork to board (any member can add) - SINGLE VERSION
+exports.addArtworkToBoard = async (req, res) => {
+  try {
+    const { artworkId, note } = req.body;
+    const board = await Board.findById(req.params.id);
+
+    if (!board) {
+      return res.status(404).json({ message: 'Board not found' });
+    }
+
+    // Check if user is member and can add artworks
+    if (!board.canAddArtworks(req.user._id)) {
+      return res.status(403).json({ message: 'Permission denied. Join the board to add artworks.' });
+    }
+
+    // Check if artwork exists
+    const artwork = await Artwork.findById(artworkId);
+    if (!artwork) {
+      return res.status(404).json({ message: 'Artwork not found' });
+    }
+
+    // Check if already added
+    const alreadyAdded = board.artworks.some(
+      a => a.artwork.toString() === artworkId
+    );
+
+    if (alreadyAdded) {
+      return res.status(400).json({ message: 'Artwork already in board' });
+    }
+
+    board.artworks.push({
+      artwork: artworkId,
+      addedBy: req.user._id,
+      note
+    });
+
+    board.stats.totalArtworks += 1;
+    board.lastActivity = new Date();
+    await board.save();
+
+    await board.populate({
+      path: 'artworks.artwork',
+      populate: { path: 'creator', select: 'name avatar' }
+    });
+
+    // Emit socket event
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`board-${req.params.id}`).emit('artwork-added', {
+        boardId: req.params.id,
+        artwork: board.artworks[board.artworks.length - 1]
+      });
+    }
+
+    res.json(board);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Get all boards with proper filtering
+exports.getAllBoards = async (req, res) => {
+  try {
+    const { page = 1, limit = 20, search, category } = req.query;
+    
+    const filter = { visibility: 'public' };
+    
+    if (search) {
+      filter.title = { $regex: search, $options: 'i' };
+    }
+    
+    if (category) {
+      filter.category = category;
+    }
+
+    const boards = await Board.find(filter)
+      .populate('creator', 'name avatar')
+      .populate('members.user', 'name avatar')
+      .sort({ lastActivity: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    const total = await Board.countDocuments(filter);
+
+    res.json({
+      boards,
+      total,
+      page: parseInt(page),
+      pages: Math.ceil(total / limit)
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// Create a new board
+exports.createBoard = async (req, res) => {
+  try {
+    const { title, description, visibility, tags, category } = req.body;
+
+    const board = await Board.create({
+      title,
+      description,
+      creator: req.user._id,
+      visibility: visibility || 'public',
+      tags: tags ? tags.split(',').map(t => t.trim()) : [],
+      category,
+      members: [{
+        user: req.user._id,
+        role: 'admin',
+        joinedAt: new Date()
+      }]
+    });
+
+    await board.populate('creator', 'name avatar');
+    await board.populate('members.user', 'name avatar');
+
+    // Emit socket event
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('board-created', {
+        board,
+        userId: req.user._id.toString()
+      });
+    }
+
+    res.status(201).json(board);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
 // Update board
 exports.updateBoard = async (req, res) => {
@@ -171,13 +267,12 @@ exports.updateBoard = async (req, res) => {
       return res.status(404).json({ message: 'Board not found' });
     }
 
-    // Check permissions
+    // Check permissions - only creator or admin members can update
     const isCreator = board.creator.toString() === req.user._id.toString();
-    const isEditor = board.collaborators.some(
-      c => c.user.toString() === req.user._id.toString() && c.role === 'editor'
-    );
+    const userMember = board.members.find(m => m.user.toString() === req.user._id.toString());
+    const isAdmin = userMember && userMember.role === 'admin';
 
-    if (!isCreator && !isEditor) {
+    if (!isCreator && !isAdmin) {
       return res.status(403).json({ message: 'Permission denied' });
     }
 
@@ -194,7 +289,7 @@ exports.updateBoard = async (req, res) => {
     await board.save();
 
     await board.populate('creator', 'name avatar');
-    await board.populate('collaborators.user', 'name avatar');
+    await board.populate('members.user', 'name avatar');
 
     res.json(board);
   } catch (err) {
@@ -223,71 +318,6 @@ exports.deleteBoard = async (req, res) => {
   }
 };
 
-// Add artwork to board
-exports.addArtworkToBoard = async (req, res) => {
-  try {
-    const { artworkId, note } = req.body;
-    const board = await Board.findById(req.params.id);
-
-    if (!board) {
-      return res.status(404).json({ message: 'Board not found' });
-    }
-
-    // Check permissions
-    const isCreator = board.creator.toString() === req.user._id.toString();
-    const isCollaborator = board.collaborators.some(
-      c => c.user.toString() === req.user._id.toString()
-    );
-
-    if (!isCreator && !isCollaborator && !board.settings.allowContributions) {
-      return res.status(403).json({ message: 'Permission denied' });
-    }
-
-    // Check if artwork exists
-    const artwork = await Artwork.findById(artworkId);
-    if (!artwork) {
-      return res.status(404).json({ message: 'Artwork not found' });
-    }
-
-    // Check if already added
-    const alreadyAdded = board.artworks.some(
-      a => a.artwork.toString() === artworkId
-    );
-
-    if (alreadyAdded) {
-      return res.status(400).json({ message: 'Artwork already in board' });
-    }
-
-    board.artworks.push({
-      artwork: artworkId,
-      addedBy: req.user._id,
-      note
-    });
-
-    board.lastActivity = new Date();
-    await board.save();
-
-    await board.populate({
-      path: 'artworks.artwork',
-      populate: { path: 'creator', select: 'name avatar' }
-    });
-    await board.populate('artworks.addedBy', 'name avatar');
-
-    // Emit socket event
-    const io = req.app.get('io');
-    if (io) {
-      io.to(req.params.id).emit('artwork-added', {
-        boardId: req.params.id,
-        artwork: board.artworks[board.artworks.length - 1]
-      });
-    }
-
-    res.json(board);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
 // Remove artwork from board
 exports.removeArtworkFromBoard = async (req, res) => {
   try {
@@ -300,16 +330,15 @@ exports.removeArtworkFromBoard = async (req, res) => {
 
     // Check permissions
     const isCreator = board.creator.toString() === req.user._id.toString();
-    const isCollaborator = board.collaborators.some(
-      c => c.user.toString() === req.user._id.toString() && c.role === 'editor'
-    );
+    const userMember = board.members.find(m => m.user.toString() === req.user._id.toString());
+    const isAdmin = userMember && userMember.role === 'admin';
 
     const artworkEntry = board.artworks.find(
       a => a.artwork.toString() === artworkId
     );
     const isAdder = artworkEntry?.addedBy.toString() === req.user._id.toString();
 
-    if (!isCreator && !isCollaborator && !isAdder) {
+    if (!isCreator && !isAdmin && !isAdder) {
       return res.status(403).json({ message: 'Permission denied' });
     }
 
@@ -317,118 +346,11 @@ exports.removeArtworkFromBoard = async (req, res) => {
       a => a.artwork.toString() !== artworkId
     );
 
+    board.stats.totalArtworks = Math.max(0, board.stats.totalArtworks - 1);
     board.lastActivity = new Date();
     await board.save();
 
     res.json(board);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// Add collaborator to board
-exports.addCollaborator = async (req, res) => {
-  try {
-    const { userId, role = 'editor' } = req.body;
-    const board = await Board.findById(req.params.id);
-
-    if (!board) {
-      return res.status(404).json({ message: 'Board not found' });
-    }
-
-    // Only creator can add collaborators
-    if (board.creator.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Only creator can add collaborators' });
-    }
-
-    // Check if user exists
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Check if already a collaborator
-    const alreadyCollaborator = board.collaborators.some(
-      c => c.user.toString() === userId
-    );
-
-    if (alreadyCollaborator) {
-      return res.status(400).json({ message: 'User is already a collaborator' });
-    }
-
-    board.collaborators.push({
-      user: userId,
-      role
-    });
-
-    await board.save();
-    await board.populate('collaborators.user', 'name avatar');
-
-    // Emit socket event
-    const io = req.app.get('io');
-    if (io) {
-      io.to(`user-${userId}`).emit('collaborator-added', {
-        boardId: board._id,
-        boardTitle: board.title
-      });
-    }
-
-    res.json(board);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// Remove collaborator
-exports.removeCollaborator = async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const board = await Board.findById(req.params.id);
-
-    if (!board) {
-      return res.status(404).json({ message: 'Board not found' });
-    }
-
-    // Only creator can remove collaborators
-    if (board.creator.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Only creator can remove collaborators' });
-    }
-
-    board.collaborators = board.collaborators.filter(
-      c => c.user.toString() !== userId
-    );
-
-    await board.save();
-    res.json(board);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// Follow/unfollow board
-exports.toggleFollowBoard = async (req, res) => {
-  try {
-    const board = await Board.findById(req.params.id);
-
-    if (!board) {
-      return res.status(404).json({ message: 'Board not found' });
-    }
-
-    const userId = req.user._id;
-    const isFollowing = board.followers.some(f => f.toString() === userId.toString());
-
-    if (isFollowing) {
-      board.followers = board.followers.filter(f => f.toString() !== userId.toString());
-    } else {
-      board.followers.push(userId);
-    }
-
-    await board.save();
-
-    res.json({
-      isFollowing: !isFollowing,
-      followersCount: board.followers.length
-    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -443,11 +365,11 @@ exports.getUserBoards = async (req, res) => {
     const boards = await Board.find({
       $or: [
         { creator: userId },
-        { 'collaborators.user': userId }
+        { 'members.user': userId }
       ]
     })
       .populate('creator', 'name avatar')
-      .populate('collaborators.user', 'name avatar')
+      .populate('members.user', 'name avatar')
       .sort({ lastActivity: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
@@ -455,7 +377,7 @@ exports.getUserBoards = async (req, res) => {
     const total = await Board.countDocuments({
       $or: [
         { creator: userId },
-        { 'collaborators.user': userId }
+        { 'members.user': userId }
       ]
     });
 
@@ -470,7 +392,7 @@ exports.getUserBoards = async (req, res) => {
   }
 };
 
-
+// Board chat functions
 exports.getBoardChatMessages = async (req, res) => {
   try {
     const messages = await ChatMessage.find({ board: req.params.id })
@@ -484,7 +406,6 @@ exports.getBoardChatMessages = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
-
 
 exports.sendChatMessage = async (req, res) => {
   try {
@@ -500,9 +421,14 @@ exports.sendChatMessage = async (req, res) => {
       return res.status(404).json({ message: 'Board not found' });
     }
 
+    // Check if user is member to send messages
+    if (!board.isMember(req.user._id)) {
+      return res.status(403).json({ message: 'Join the board to participate in chat' });
+    }
+
     const chatMessage = new ChatMessage({
       board: boardId,
-      user: req.user._id, // ✅ FIX: Changed from req.user.id to req.user._id
+      user: req.user._id,
       message: message.trim(),
       type: 'text'
     });
@@ -510,9 +436,10 @@ exports.sendChatMessage = async (req, res) => {
     await chatMessage.save();
     await chatMessage.populate('user', 'name avatar');
 
-    // Assuming Socket.IO is attached to req.io
-    if (req.io) {
-        req.io.to(`board-${boardId}`).emit('new-chat-message', chatMessage);
+    // Emit socket event
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`board-${boardId}`).emit('new-chat-message', chatMessage);
     }
 
     res.status(201).json(chatMessage);
@@ -522,11 +449,11 @@ exports.sendChatMessage = async (req, res) => {
   }
 };
 
-// ========== NEW: Personal room functions ==========
+// Personal room functions
 exports.createPersonalRoom = async (req, res) => {
   try {
     const { otherUserId } = req.body;
-    const currentUserId = req.user._id; // ✅ FIX: Changed from req.user.id to req.user._id
+    const currentUserId = req.user._id;
 
     if (!otherUserId) {
       return res.status(400).json({ message: 'Other user ID is required' });
@@ -564,7 +491,7 @@ exports.createPersonalRoom = async (req, res) => {
 exports.getUserPersonalRooms = async (req, res) => {
   try {
     const rooms = await PersonalRoom.find({
-      participants: req.user._id // ✅ FIX: Changed from req.user.id to req.user._id
+      participants: req.user._id
     })
     .populate('participants', 'name avatar')
     .populate({
@@ -586,7 +513,7 @@ exports.getPersonalRoomMessages = async (req, res) => {
     
     const room = await PersonalRoom.findOne({
       roomId: roomId,
-      participants: req.user._id // ✅ FIX: Changed from req.user.id to req.user._id
+      participants: req.user._id
     });
 
     if (!room) {
@@ -639,9 +566,10 @@ exports.sendPersonalRoomMessage = async (req, res) => {
     room.updatedAt = new Date();
     await room.save();
     
-    // Assuming Socket.IO is attached to req.io
-    if (req.io) {
-        req.io.to(`room-${roomId}`).emit('new-personal-message', chatMessage);
+    // Emit socket event
+    const io = req.app.get('io');
+    if (io) {
+        io.to(`room-${roomId}`).emit('new-personal-message', chatMessage);
     }
 
     res.status(201).json(chatMessage);

@@ -401,6 +401,8 @@ const ArtworkDetail = ({ onLogout }) => {
     }
   };
 
+  
+
   const handleDeleteArtwork = async () => {
     if (!window.confirm('Are you absolutely sure you want to delete this artwork? This action is permanent and cannot be undone.')) {
       return;

@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { MessageCircle, Send, ArrowLeft, User } from 'lucide-react';
-import LeftBar from '../../components/leftBar/LeftBar';
-import TopBar from '../../components/topBar/topBar';
+
 import './PersonRoomPage.css';
 
 const PersonalRoomPage = ({ onLogout }) => {
@@ -168,9 +167,9 @@ const PersonalRoomPage = ({ onLogout }) => {
   if (loading) {
     return (
       <div className="page-container">
-        <LeftBar onLogout={onLogout} />
+      
         <div className="main-content">
-          <TopBar />
+        
           <div className="loading-container">
             <div className="loading-spinner"></div>
             <p>Loading chat...</p>
@@ -182,10 +181,10 @@ const PersonalRoomPage = ({ onLogout }) => {
 
   return (
     <div className="page-container">
-      <LeftBar onLogout={onLogout} />
+     
       
       <div className="main-content">
-        <TopBar />
+       
         
         <div className="personal-room-container">
           {/* Room Header */}
