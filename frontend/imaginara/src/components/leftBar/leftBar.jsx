@@ -13,7 +13,8 @@ import {
     BarChart2,
     Palette,
     Sparkles,
-    Mail
+    Mail,
+    Wand2
 } from 'lucide-react'; 
 
 const LeftBar = ({ onLogout }) => {
@@ -86,7 +87,8 @@ const LeftBar = ({ onLogout }) => {
     { path: "/discover", lucideIcon: Search, alt: "Discover" },
     {path:"/analytics", lucideIcon: BarChart2, alt:"Analytics"},
     {path:"/similarity-search", lucideIcon: Sparkles, alt:"Similarity Search"},
-    { path: "/chatbot", lucideIcon: Bot, alt: "AI ChatBot" },
+    
+    { path: "/image-generator", lucideIcon: Wand2, alt: "AI Image Generator" },
     {path:"/boards", lucideIcon: Users, alt:"Boards"},
     { path: "/settings", lucideIcon: Settings, alt: "Settings" },
   ];

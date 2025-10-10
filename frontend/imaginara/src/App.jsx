@@ -12,6 +12,7 @@ import ProfilePage from "./pages/Profile/ProfilePage";
 import Settings from "./pages/Settings/Settings";
 import ForgotPassword from './pages/Auth/ForgetPassword';
 import ChatBot from './components/ChatBot/ChatBot'; 
+import ImageGenerator from './pages/ImageGenerator/ImageGenerator';
 import ProtectedLayout from "./components/ProtectedLayout";
 import { ThemeProvider, ThemeContext } from "./Context/ThemeContext";
 import DiscoverUsers from './pages/Discover/DiscoverUsers';
@@ -140,6 +141,15 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/image-generator"
+            element={
+              <ProtectedRoute>
+                <ProtectedLayout onLogout={handleLogout}><ImageGenerator /></ProtectedLayout>
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/addartwork"
             element={

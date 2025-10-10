@@ -8,7 +8,9 @@ const session = require('express-session');
 const passport = require('passport');
 const { Server } = require('socket.io');
 
-// ✅ Routes
+// ======================
+// 🔹 Routes
+// ======================
 const artworkRoutes = require('./routes/artworks');
 const authRoutes = require('./routes/auth');
 const commentRoutes = require('./routes/comments');
@@ -20,9 +22,11 @@ const similarityRoutes = require('./routes/similarity');
 const boardRoutes = require('./routes/boards');
 const collectionRoutes = require('./routes/collections');
 
-// ✅ NEW — AI Tag Generator Route
-const aiRoute = require('./routes/aiRoute');
-const geminiRoute = require('./routes/geminiRoute');
+// ✅ AI Routes
+const aiRoute = require('./routes/aiRoute');              // Tag generation
+const geminiRoute = require('./routes/geminiRoute');      // Chatbot
+const imageGenerationRoute = require('./routes/imageGeneration'); // ✅ NEW - Image Generator
+
 const app = express();
 require('./config/passport');
 
@@ -90,8 +94,24 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/similarity', similarityRoutes);
 app.use('/api/boards', boardRoutes);
 app.use('/api/collections', collectionRoutes);
-app.use('/api/ai', aiRoute);
-app.use('/api/gemini', geminiRoute);
+
+// ✅ AI Routes
+app.use('/api/ai', aiRoute);                              // Tag generation
+app.use('/api/gemini', geminiRoute);                      // Chatbot
+app.use('/api/image-generation', imageGenerationRoute);  // ✅ NEW - Image Generator
+
+// ======================
+// 🔹 Create HTTP Server + Socket.IO
+// ======================
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || '*',
+  },
+});
+
+app.set('io', io);
 
 // ======================
 // 🔹 Socket.IO Events
@@ -182,9 +202,41 @@ io.on('connection', (socket) => {
 });
 
 // ======================
+// 🔹 Health Check Route
+// ======================
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Server is running',
+    routes: {
+      auth: '/api/auth',
+      artworks: '/api/artworks',
+      comments: '/api/comments',
+      users: '/api/users',
+      follow: '/api/follow',
+      contact: '/api/contact',
+      analytics: '/api/analytics',
+      similarity: '/api/similarity',
+      boards: '/api/boards',
+      collections: '/api/collections',
+      ai: {
+        tagGeneration: '/api/ai/generate-tags',
+        chatbot: '/api/gemini/chat',
+        imageGeneration: '/api/image-generation/generate'
+      }
+    }
+  });
+});
+
+// ======================
 // 🔹 Start Server
 // ======================
 const PORT = process.env.PORT || 8000;
 server.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
+  console.log(`📍 Health check: http://localhost:${PORT}/api/health`);
+  console.log(`🤖 AI Routes available:`);
+  console.log(`   - Tag Generation: POST /api/ai/generate-tags`);
+  console.log(`   - Chatbot: POST /api/gemini/chat`);
+  console.log(`   - Image Generation: POST /api/image-generation/generate`);
 });
