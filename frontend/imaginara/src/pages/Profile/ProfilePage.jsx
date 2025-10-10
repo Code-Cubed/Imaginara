@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Trash2, Heart, MessageCircle, Eye, Edit, X } from "lucide-react";
 import { io } from "socket.io-client";
@@ -13,14 +13,13 @@ const ProfilePage = () => {
   const [bookmarks, setBookmarks] = useState([]);
   const [likes, setLikes] = useState([]);
   const [comments, setComments] = useState([]);
-  const [loading, setLoading] = useState(true); // Keep global loading state
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [socket, setSocket] = useState(null);
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editedCommentText, setEditedCommentText] = useState('');
   const [newAvatar, setNewAvatar] = useState(null);
   const [name, setName] = useState('');
-  // Removed [bio, setBio] state
   
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [modalType, setModalType] = useState('followers'); 
@@ -39,6 +38,78 @@ const ProfilePage = () => {
 
   const userId = getUserIdFromToken();
 
+  // Video Card Component with hover functionality
+  const VideoCard = ({ artwork, showRemoveBookmark }) => {
+    const videoRef = useRef(null);
+
+    const handleMouseEnter = () => {
+      if (videoRef.current) {
+        videoRef.current.play().catch(err => {
+          console.log('Video play failed:', err);
+        });
+      }
+    };
+
+    const handleMouseLeave = () => {
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0;
+      }
+    };
+
+    return (
+      <div
+        key={artwork._id}
+        className="artwork-card"
+        onClick={() => handleArtworkClick(artwork._id)}
+      >
+        <div 
+          className="artwork-image-container"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+          <video 
+            ref={videoRef}
+            src={artwork.mediaUrl} 
+            className="artwork-image" 
+            muted 
+            loop
+          />
+          <div className="artwork-overlay">
+            <div className="artwork-stats">
+              <span>
+                <Heart size={16} /> {artwork.likes?.length || 0}
+              </span>
+              <span>
+                <Eye size={16} /> {artwork.views || 0}
+              </span>
+              <span>
+                <MessageCircle size={16} /> {artwork.commentsCount || 0}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="artwork-info">
+          <h3 className="artwork-title">{artwork.title}</h3>
+          {artwork.creator && (
+            <p className="artwork-creator">By {artwork.creator.name}</p>
+          )}
+          {artwork.category && (
+            <span className="artwork-category">{artwork.category}</span>
+          )}
+          {showRemoveBookmark && (
+            <button
+              onClick={(e) => handleRemoveBookmark(artwork._id, e)}
+              className="remove-bookmark-btn"
+            >
+              Remove
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // -------------------------------------------------------------------
   // Core Data Fetching Functions
   // -------------------------------------------------------------------
@@ -52,10 +123,9 @@ const ProfilePage = () => {
 
       if (data.user) {
         localStorage.setItem("user", JSON.stringify(data.user));
-        setName(data.user.name || ''); // Set name here
-        // setBio(data.user.bio || ''); // Removed bio
+        setName(data.user.name || '');
       }
-      return data; // Return data for sequential loading
+      return data;
     } catch (err) {
       setError(err.message);
       return null;
@@ -70,7 +140,6 @@ const ProfilePage = () => {
       setUploads(data.artworks || []);
     } catch (err) {
       console.error('Failed to fetch uploads:', err);
-      // Don't set global error, just log for sub-data fetch failures
     }
   };
 
@@ -147,7 +216,7 @@ const ProfilePage = () => {
     };
   }, [userId, navigate]);
 
-  // Initial Data Load (FIXED LOADING ISSUE)
+  // Initial Data Load
   useEffect(() => {
     const loadAllData = async () => {
       if (!userId) return;
@@ -155,9 +224,8 @@ const ProfilePage = () => {
       setLoading(true);
       setError("");
 
-      await fetchProfile(); // Wait for profile data first
+      await fetchProfile();
 
-      // Fetch all tab data concurrently after profile is loaded
       await Promise.all([
         fetchUploads(),
         fetchBookmarks(),
@@ -173,10 +241,9 @@ const ProfilePage = () => {
 
 
   // -------------------------------------------------------------------
-  // Handlers (Reduced for brevity, only showing updated ones)
+  // Handlers
   // -------------------------------------------------------------------
 
-  // ✅ NEW: Open followers/following modal
   const openFollowersModal = (type) => {
     setModalType(type);
     setShowFollowersModal(true);
@@ -249,7 +316,6 @@ const ProfilePage = () => {
   };
   
   const handleDeleteAccount = async () => {
-    // ... (unchanged)
     const confirmed = window.confirm(
       "⚠️ WARNING: This will permanently delete your account and ALL associated data including artworks, comments, and bookmarks. This action cannot be undone. Are you sure?"
     );
@@ -287,7 +353,6 @@ const ProfilePage = () => {
     const token = localStorage.getItem("token");
     const formData = new FormData();
     formData.append("name", name);
-    // Removed formData.append("bio", bio); 
     if (newAvatar) formData.append("avatar", newAvatar);
 
     try {
@@ -309,7 +374,6 @@ const ProfilePage = () => {
   };
 
   const handleRemoveAvatar = async () => {
-    // ... (unchanged)
     const token = localStorage.getItem("token");
 
     try {
@@ -355,65 +419,69 @@ const ProfilePage = () => {
   // Render Functions
   // -------------------------------------------------------------------
 
-  const renderArtworkCard = (artwork, showRemoveBookmark = false) => (
-    <div
-      key={artwork._id}
-      className="artwork-card"
-      onClick={() => handleArtworkClick(artwork._id)}
-    >
-      <div className="artwork-image-container">
-        {artwork.mediaType === "image" ? (
-          <img
-            src={artwork.thumbnailUrl || artwork.mediaUrl}
-            alt={artwork.title}
-            className="artwork-image"
-          />
-        ) : artwork.mediaType === "video" ? (
-          <video src={artwork.mediaUrl} className="artwork-image" muted />
-        ) : (
-          <div className="artwork-placeholder">
-            <span className="media-icon">
-              {artwork.mediaType === "audio" ? "🎵" : "📄"}
-            </span>
-          </div>
-        )}
-        <div className="artwork-overlay">
-          <div className="artwork-stats">
-            <span>
-              <Heart size={16} /> {artwork.likes?.length || 0}
-            </span>
-            <span>
-              <Eye size={16} /> {artwork.views || 0}
-            </span>
-            <span>
-              <MessageCircle size={16} /> {artwork.commentsCount || 0}
-            </span>
+  const renderArtworkCard = (artwork, showRemoveBookmark = false) => {
+    // Use VideoCard component for videos
+    if (artwork.mediaType === "video") {
+      return <VideoCard key={artwork._id} artwork={artwork} showRemoveBookmark={showRemoveBookmark} />;
+    }
+
+    // Regular card for images, audio, documents
+    return (
+      <div
+        key={artwork._id}
+        className="artwork-card"
+        onClick={() => handleArtworkClick(artwork._id)}
+      >
+        <div className="artwork-image-container">
+          {artwork.mediaType === "image" ? (
+            <img
+              src={artwork.thumbnailUrl || artwork.mediaUrl}
+              alt={artwork.title}
+              className="artwork-image"
+            />
+          ) : (
+            <div className="artwork-placeholder">
+              <span className="media-icon">
+                {artwork.mediaType === "audio" ? "🎵" : "📄"}
+              </span>
+            </div>
+          )}
+          <div className="artwork-overlay">
+            <div className="artwork-stats">
+              <span>
+                <Heart size={16} /> {artwork.likes?.length || 0}
+              </span>
+              <span>
+                <Eye size={16} /> {artwork.views || 0}
+              </span>
+              <span>
+                <MessageCircle size={16} /> {artwork.commentsCount || 0}
+              </span>
+            </div>
           </div>
         </div>
+        <div className="artwork-info">
+          <h3 className="artwork-title">{artwork.title}</h3>
+          {artwork.creator && (
+            <p className="artwork-creator">By {artwork.creator.name}</p>
+          )}
+          {artwork.category && (
+            <span className="artwork-category">{artwork.category}</span>
+          )}
+          {showRemoveBookmark && (
+            <button
+              onClick={(e) => handleRemoveBookmark(artwork._id, e)}
+              className="remove-bookmark-btn"
+            >
+              Remove
+            </button>
+          )}
+        </div>
       </div>
-      <div className="artwork-info">
-        <h3 className="artwork-title">{artwork.title}</h3>
-        {artwork.creator && (
-          <p className="artwork-creator">By {artwork.creator.name}</p>
-        )}
-        {artwork.category && (
-          <span className="artwork-category">{artwork.category}</span>
-        )}
-        {showRemoveBookmark && (
-          <button
-            onClick={(e) => handleRemoveBookmark(artwork._id, e)}
-            className="remove-bookmark-btn"
-          >
-            Remove
-          </button>
-        )}
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderContent = () => {
-    // Removed loading check here, relying on global check before main return
-    
     if (error) {
       return <div className="alert alert-error">{error}</div>;
     }
@@ -564,7 +632,6 @@ const ProfilePage = () => {
 
   if (loading || !profile) {
     return (
-      // Show loading spinner while fetching initial data
       <div className="flex min-h-screen bg-gray-100">
         <div className="flex-1 p-6">
           <div className="loading-container">
@@ -589,7 +656,6 @@ const ProfilePage = () => {
                 <User size={48} />
               )}
 
-              {/* Top-right corner stacked actions */}
               <div className="avatar-actions-top">
                 <label className="btn btn-outline">
                   <span className="btn-icon">✏️</span> Change
@@ -615,9 +681,7 @@ const ProfilePage = () => {
                 className="input input-bordered w-full max-w-xs mb-4"
                 placeholder="Your Name"
               />
-              {/* Removed Bio textarea here */}
 
-              {/* Stats - now clickable */}
               <div className="profile-stats mt-4">
                 <div className="stat-item">
                   <span className="stat-value">{profile.stats?.uploads || 0}</span>
@@ -690,14 +754,14 @@ const ProfilePage = () => {
       </main>
 
       {/* Followers/Following Modal */}
-     <FollowersModal
-  isOpen={showFollowersModal}
-  onClose={() => setShowFollowersModal(false)}
-  userId={userId}
-  type={modalType}
-  currentUserId={userId}
-  onUpdateCounts={fetchProfile} // <<< ADD THIS PROP
-/>
+      <FollowersModal
+        isOpen={showFollowersModal}
+        onClose={() => setShowFollowersModal(false)}
+        userId={userId}
+        type={modalType}
+        currentUserId={userId}
+        onUpdateCounts={fetchProfile}
+      />
     </div>
   );
 };

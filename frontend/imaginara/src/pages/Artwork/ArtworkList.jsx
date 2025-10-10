@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LeftBar from '../../components/leftBar/LeftBar';
 import TopBar from '../../components/topBar/topBar';
@@ -76,6 +76,47 @@ const ArtworkList = ({ onLogout }) => {
 
   const {theme} = useContext(ThemeContext);
 
+  // Video Card Component with hover functionality
+  const VideoCard = ({ artwork }) => {
+    const videoRef = useRef(null);
+
+    const handleMouseEnter = () => {
+      if (videoRef.current) {
+        videoRef.current.play().catch(err => {
+          console.log('Video play failed:', err);
+        });
+      }
+    };
+
+    const handleMouseLeave = () => {
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0;
+      }
+    };
+
+    return (
+      <div
+        className="artwork-image-container"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <video 
+          ref={videoRef}
+          src={artwork.mediaUrl} 
+          className="artwork-image" 
+          muted 
+          loop
+        />
+        <div className="artwork-overlay">
+          <div className="artwork-stats">
+            <span>{artwork.likes.length}</span>
+            <span>{artwork.views}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div data-theme={theme} className="flex min-h-screen ">
@@ -169,29 +210,37 @@ const ArtworkList = ({ onLogout }) => {
                   className="artwork-card"
                   onClick={() => handleArtworkClick(artwork._id)}
                 >
-                  <div className="artwork-image-container">
-                    {artwork.mediaType === 'image' ? (
-                      <img
-                        src={artwork.thumbnailUrl || artwork.mediaUrl}
-                        alt={artwork.title}
-                        className="artwork-image"
-                      />
-                    ) : artwork.mediaType === 'video' ? (
-                      <video src={artwork.mediaUrl} className="artwork-image" muted />
-                    ) : (
-                      <div className="artwork-placeholder">
-                        <span className="media-icon">
-                          {artwork.mediaType === 'audio' ? '🎵' : '📄'}
-                        </span>
-                      </div>
-                    )}
-                    <div className="artwork-overlay">
-                      <div className="artwork-stats">
-                        <span>{artwork.likes.length}</span>
-                        <span>{artwork.views}</span>
+                  {artwork.mediaType === 'video' ? (
+                    <VideoCard artwork={artwork} />
+                  ) : (
+                    <div className="artwork-image-container">
+                      {artwork.mediaType === 'image' ? (
+                        <img
+                          src={artwork.thumbnailUrl || artwork.mediaUrl}
+                          alt={artwork.title}
+                          className="artwork-image"
+                        />
+                      ) : (
+                        <div className="artwork-placeholder" data-media-type={artwork.mediaType}>
+                          <div className="placeholder-content">
+                            <span className="media-icon">
+                              {artwork.mediaType === 'audio' ? '🎵' : '📄'}
+                            </span>
+                            <p className="media-type-label">
+                              {artwork.mediaType === 'audio' ? 'Audio' : 'Document'}
+                            </p>
+                            <p className="media-title-preview">{artwork.title}</p>
+                          </div>
+                        </div>
+                      )}
+                      <div className="artwork-overlay">
+                        <div className="artwork-stats">
+                          <span>{artwork.likes.length}</span>
+                          <span>{artwork.views}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                   <div className="artwork-info">
                     <h3 className="artwork-title">{artwork.title}</h3>
                     <p className="artwork-creator">

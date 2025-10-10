@@ -3,6 +3,7 @@ import React, { useState, useContext } from 'react';
 import { ThemeContext } from '../../Context/ThemeContext';
 import { Download, Sparkles, RefreshCw, Image as ImageIcon } from 'lucide-react';
 import './ImageGenerator.css';
+import blockedKeywords from '../Constants/blockedKeywords';
 
 const ImageGenerator = () => {
   const { theme } = useContext(ThemeContext);
@@ -24,6 +25,17 @@ const ImageGenerator = () => {
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       setError('Please enter a prompt');
+      return;
+    }
+
+    // ✅ NSFW / Blocked words filter
+    const lowerPrompt = prompt.toLowerCase();
+    const containsBlockedWord = blockedKeywords.some(word =>
+      lowerPrompt.includes(word)
+    );
+
+    if (containsBlockedWord) {
+      setError('🚫 This prompt violates our content policy. Please enter a safe and creative description.');
       return;
     }
 
