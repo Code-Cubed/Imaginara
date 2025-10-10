@@ -59,6 +59,7 @@ const ArtworkList = ({ onLogout }) => {
     setSearchTags(e.target.value);
     setFilters({ ...filters, tags: e.target.value });
   }
+  const handleChatClick = () => navigate('/chatbot');
 
   const {theme} = useContext(ThemeContext);
 
@@ -191,6 +192,15 @@ const ArtworkList = ({ onLogout }) => {
           )}
         </div>
       </div>
+
+      {/* Floating Chat Button */}
+      <button
+        onClick={handleChatClick}
+        className="chat-float-button"
+        aria-label="Open chat"
+      >
+        💬
+      </button>
     </div>
   );
 };
