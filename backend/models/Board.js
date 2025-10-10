@@ -29,15 +29,10 @@ const BoardSchema = new mongoose.Schema({
     addedAt: { type: Date, default: Date.now },
     note: String // Optional note about why this artwork was added
   }],
-  // Collaborators who can edit
-  collaborators: [{
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    role: {
-      type: String,
-      enum: ['editor', 'viewer'],
-      default: 'editor'
-    },
-    addedAt: { type: Date, default: Date.now }
+  // Collaborators who can edit (simplified for compatibility)
+  collaborators: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
   }],
   // Followers who want updates
   followers: [{ 
@@ -49,7 +44,7 @@ const BoardSchema = new mongoose.Schema({
   // Board settings
   settings: {
     allowComments: { type: Boolean, default: true },
-    allowContributions: { type: Boolean, default: true }, // Allow others to suggest artworks
+    allowContributions: { type: Boolean, default: true },
     showContributors: { type: Boolean, default: true }
   },
   // Stats
@@ -68,6 +63,7 @@ const BoardSchema = new mongoose.Schema({
 BoardSchema.index({ creator: 1, createdAt: -1 });
 BoardSchema.index({ visibility: 1, createdAt: -1 });
 BoardSchema.index({ tags: 1 });
-BoardSchema.index({ 'collaborators.user': 1 });
+BoardSchema.index({ collaborators: 1 });
+BoardSchema.index({ title: 1 });
 
 module.exports = mongoose.model('Board', BoardSchema);

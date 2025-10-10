@@ -19,7 +19,9 @@ import ContactPage from './pages/Contact/ContactForm';
 import OAuthCallback from './pages/Auth/OAuthCallback';
 import AnalyticsDashboard from './pages/Analytics/AnalyticsDashboard';
 import SimilaritySearch from './pages/Similarity/SimilaritySearch';
-import BoardsPage from './pages/Boards/BoardsPage';
+import BoardsPage from './pages/Boards/BoardsPage'
+import BoardDetailPage from './pages/Boards/BoardDetailPage';
+import PersonalRoomPage from './pages/PersonalRoom/PersonalRoomPage';
 function App() {
   return (
     <ThemeProvider>
@@ -113,6 +115,14 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+          <Route 
+          path="/boards/:id" 
+          element={<BoardDetailPage onLogout={handleLogout} />} 
+        />
+        <Route 
+          path="/personal-room/:roomId" 
+          element={<PersonalRoomPage onLogout={handleLogout} />} 
+        />
           <Route
             path="/profile"
             element={

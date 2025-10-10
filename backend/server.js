@@ -45,8 +45,8 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === 'production', // true in production
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000,
     },
   })
 );
@@ -58,6 +58,24 @@ app.use(passport.session());
 // 🔹 Connect to MongoDB
 // ======================
 connectDB();
+
+// ======================
+// 🔹 Create HTTP Server + Socket.IO
+// ======================
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"]
+  },
+});
+
+// ⚠️ IMPORTANT: Make io accessible in routes
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 
 // ======================
 // 🔹 API Routes
@@ -72,22 +90,8 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/similarity', similarityRoutes);
 app.use('/api/boards', boardRoutes);
 app.use('/api/collections', collectionRoutes);
-
-// ✅ Add AI route
 app.use('/api/ai', aiRoute);
 app.use('/api/gemini', geminiRoute);
-// ======================
-// 🔹 Create HTTP Server + Socket.IO
-// ======================
-const server = http.createServer(app);
-
-const io = new Server(server, {
-  cors: {
-    origin: process.env.FRONTEND_URL || '*',
-  },
-});
-
-app.set('io', io);
 
 // ======================
 // 🔹 Socket.IO Events
@@ -95,6 +99,7 @@ app.set('io', io);
 io.on('connection', (socket) => {
   console.log('Socket connected:', socket.id);
 
+  // ========== Existing User Events ==========
   socket.on('join-user', (userId) => {
     socket.join(`user-${userId}`);
     console.log(`User ${userId} joined personal room`);
@@ -104,6 +109,7 @@ io.on('connection', (socket) => {
     socket.leave(`user-${userId}`);
   });
 
+  // ========== Existing Artwork Events ==========
   socket.on('join-artwork', (artworkId) => {
     socket.join(artworkId);
   });
@@ -118,6 +124,56 @@ io.on('connection', (socket) => {
 
   socket.on('like-updated', (data) => {
     io.to(data.artworkId).emit('like-updated', { likes: data.likes });
+  });
+
+  // ========== NEW: Board Events ==========
+  socket.on('join-board', (boardId) => {
+    socket.join(`board-${boardId}`);
+    socket.to(`board-${boardId}`).emit('user-joined-board');
+    console.log(`User ${socket.id} joined board ${boardId}`);
+  });
+
+  socket.on('leave-board', (boardId) => {
+    socket.leave(`board-${boardId}`);
+    socket.to(`board-${boardId}`).emit('user-left-board');
+    console.log(`User ${socket.id} left board ${boardId}`);
+  });
+
+  socket.on('typing-board', (data) => {
+    socket.to(`board-${data.boardId}`).emit('user-typing', {
+      userId: data.userId,
+      userName: data.userName
+    });
+  });
+
+  socket.on('stop-typing-board', (data) => {
+    socket.to(`board-${data.boardId}`).emit('user-stopped-typing', {
+      userId: data.userId
+    });
+  });
+
+  // ========== NEW: Personal Room Events ==========
+  socket.on('join-personal-room', (roomId) => {
+    socket.join(`room-${roomId}`);
+    console.log(`User ${socket.id} joined personal room ${roomId}`);
+  });
+
+  socket.on('leave-personal-room', (roomId) => {
+    socket.leave(`room-${roomId}`);
+    console.log(`User ${socket.id} left personal room ${roomId}`);
+  });
+
+  socket.on('typing-personal-room', (data) => {
+    socket.to(`room-${data.roomId}`).emit('user-typing-personal', {
+      userId: data.userId,
+      userName: data.userName
+    });
+  });
+
+  socket.on('stop-typing-personal-room', (data) => {
+    socket.to(`room-${data.roomId}`).emit('user-stopped-typing-personal', {
+      userId: data.userId
+    });
   });
 
   socket.on('disconnect', () => {

@@ -2,8 +2,74 @@
 const Board = require('../models/Board');
 const Artwork = require('../models/Artwork');
 const User = require('../models/User');
-
+const ChatMessage = require('../models/ChatMessage');
+const PersonalRoom = require('../models/PersonalRoom');
 // Create a new board
+
+exports.autoCreateBoards = async (req, res) => {
+  try {
+    // 🎯 CRITICAL FIX: Filter artworks by the authenticated user's ID
+    const currentUserId = req.user._id; 
+    
+    // Find only the artworks created by the current user
+    const artworks = await Artwork.find({ creator: currentUserId }).populate('creator', 'name avatar');
+    
+    if (artworks.length === 0) {
+      return res.status(400).json({ 
+        message: 'No artworks found for this user to create boards' 
+      });
+    }
+
+    const groupedByTitle = artworks.reduce((acc, artwork) => {
+      // Ensure title is a string before calling trim
+      const title = String(artwork.title).trim(); 
+      if (!acc[title]) {
+        acc[title] = [];
+      }
+      acc[title].push(artwork);
+      return acc;
+    }, {});
+
+    const createdBoards = [];
+    for (const [title, artworksGroup] of Object.entries(groupedByTitle)) {
+      // Check for existing board with the same title to avoid duplicates
+      const existingBoard = await Board.findOne({ title: title });
+      
+      if (!existingBoard) {
+        const firstArtwork = artworksGroup[0];
+        
+        const newBoard = new Board({
+          title: title,
+          description: `A collaborative collection of "${title}" artworks`,
+          creator: currentUserId, // Use the authenticated user's ID as the board creator
+          visibility: 'public',
+          category: firstArtwork.category || 'General',
+          artworks: artworksGroup.map(art => ({
+            artwork: art._id,
+            addedBy: art.creator._id,
+            addedAt: new Date()
+          })),
+          coverImage: firstArtwork.thumbnailUrl || firstArtwork.mediaUrl,
+          tags: firstArtwork.tags || []
+        });
+
+        await newBoard.save();
+        createdBoards.push(newBoard);
+      }
+    }
+
+    res.status(201).json({
+      message: `${createdBoards.length} new boards created successfully`,
+      boards: createdBoards
+    });
+  } catch (error) {
+    console.error('Auto-create boards error:', error);
+    // Include user ID in error logging for context
+    console.error('User ID involved in error:', req.user ? req.user._id : 'N/A'); 
+    res.status(500).json({ message: 'Server error during board creation', error: error.message });
+  }
+};
+
 exports.createBoard = async (req, res) => {
   try {
     const { title, description, visibility, tags, category } = req.body;
@@ -74,38 +140,27 @@ exports.getBoard = async (req, res) => {
   try {
     const board = await Board.findById(req.params.id)
       .populate('creator', 'name avatar')
-      .populate('collaborators.user', 'name avatar')
+      .populate('collaborators', 'name avatar')
       .populate({
         path: 'artworks.artwork',
         populate: { path: 'creator', select: 'name avatar' }
-      })
-      .populate('artworks.addedBy', 'name avatar');
+      });
 
     if (!board) {
       return res.status(404).json({ message: 'Board not found' });
-    }
-
-    // Check visibility permissions
-    if (board.visibility === 'private') {
-      const isCreator = board.creator._id.toString() === req.user?._id?.toString();
-      const isCollaborator = board.collaborators.some(
-        c => c.user._id.toString() === req.user?._id?.toString()
-      );
-      
-      if (!isCreator && !isCollaborator) {
-        return res.status(403).json({ message: 'Access denied' });
-      }
     }
 
     // Increment view count
     board.stats.views += 1;
     await board.save();
 
-    res.json(board);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(200).json(board);
+  } catch (error) {
+    console.error('Get board error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
 
 // Update board
 exports.updateBoard = async (req, res) => {
@@ -412,5 +467,186 @@ exports.getUserBoards = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+
+exports.getBoardChatMessages = async (req, res) => {
+  try {
+    const messages = await ChatMessage.find({ board: req.params.id })
+      .populate('user', 'name avatar')
+      .sort({ createdAt: 1 })
+      .limit(100);
+
+    res.status(200).json(messages);
+  } catch (error) {
+    console.error('Get chat messages error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+
+exports.sendChatMessage = async (req, res) => {
+  try {
+    const { message } = req.body;
+    const boardId = req.params.id;
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({ message: 'Message cannot be empty' });
+    }
+
+    const board = await Board.findById(boardId);
+    if (!board) {
+      return res.status(404).json({ message: 'Board not found' });
+    }
+
+    const chatMessage = new ChatMessage({
+      board: boardId,
+      user: req.user._id, // ✅ FIX: Changed from req.user.id to req.user._id
+      message: message.trim(),
+      type: 'text'
+    });
+
+    await chatMessage.save();
+    await chatMessage.populate('user', 'name avatar');
+
+    // Assuming Socket.IO is attached to req.io
+    if (req.io) {
+        req.io.to(`board-${boardId}`).emit('new-chat-message', chatMessage);
+    }
+
+    res.status(201).json(chatMessage);
+  } catch (error) {
+    console.error('Send message error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// ========== NEW: Personal room functions ==========
+exports.createPersonalRoom = async (req, res) => {
+  try {
+    const { otherUserId } = req.body;
+    const currentUserId = req.user._id; // ✅ FIX: Changed from req.user.id to req.user._id
+
+    if (!otherUserId) {
+      return res.status(400).json({ message: 'Other user ID is required' });
+    }
+    
+    // Ensure IDs are strings for comparison
+    if (String(currentUserId) === String(otherUserId)) {
+      return res.status(400).json({ message: 'Cannot create room with yourself' });
+    }
+
+    const existingRoom = await PersonalRoom.findOne({
+      participants: { $all: [currentUserId, otherUserId] }
+    }).populate('participants', 'name avatar');
+
+    if (existingRoom) {
+      return res.status(200).json(existingRoom);
+    }
+
+    const roomId = [currentUserId, otherUserId].map(String).sort().join('-');
+    const newRoom = new PersonalRoom({
+      roomId: roomId,
+      participants: [currentUserId, otherUserId]
+    });
+
+    await newRoom.save();
+    await newRoom.populate('participants', 'name avatar');
+
+    res.status(201).json(newRoom);
+  } catch (error) {
+    console.error('Create personal room error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+exports.getUserPersonalRooms = async (req, res) => {
+  try {
+    const rooms = await PersonalRoom.find({
+      participants: req.user._id // ✅ FIX: Changed from req.user.id to req.user._id
+    })
+    .populate('participants', 'name avatar')
+    .populate({
+      path: 'lastMessage',
+      populate: { path: 'user', select: 'name' }
+    })
+    .sort({ updatedAt: -1 });
+
+    res.status(200).json(rooms);
+  } catch (error) {
+    console.error('Get personal rooms error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+exports.getPersonalRoomMessages = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    
+    const room = await PersonalRoom.findOne({
+      roomId: roomId,
+      participants: req.user._id // ✅ FIX: Changed from req.user.id to req.user._id
+    });
+
+    if (!room) {
+      return res.status(404).json({ message: 'Room not found' });
+    }
+
+    const messages = await ChatMessage.find({ personalRoom: room._id })
+      .populate('user', 'name avatar')
+      .sort({ createdAt: 1 })
+      .limit(100);
+
+    res.status(200).json(messages);
+  } catch (error) {
+    console.error('Get room messages error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+exports.sendPersonalRoomMessage = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const { message } = req.body;
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({ message: 'Message cannot be empty' });
+    }
+
+    // Check if the current user is a participant of the room
+    const room = await PersonalRoom.findOne({
+      roomId: roomId,
+      participants: req.user._id
+    });
+
+    if (!room) {
+      return res.status(404).json({ message: 'Room not found or unauthorized' });
+    }
+
+    const chatMessage = new ChatMessage({
+      personalRoom: room._id,
+      user: req.user._id, 
+      message: message.trim(),
+      type: 'text'
+    });
+
+    await chatMessage.save();
+    await chatMessage.populate('user', 'name avatar');
+
+    // Update the last message reference and updatedAt timestamp
+    room.lastMessage = chatMessage._id;
+    room.updatedAt = new Date();
+    await room.save();
+    
+    // Assuming Socket.IO is attached to req.io
+    if (req.io) {
+        req.io.to(`room-${roomId}`).emit('new-personal-message', chatMessage);
+    }
+
+    res.status(201).json(chatMessage);
+  } catch (error) {
+    console.error('Send personal message error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
