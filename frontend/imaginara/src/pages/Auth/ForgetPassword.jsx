@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import api from "../../api/api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import "./ForgetPassword.css";
 
 const ForgotPassword = () => {
-
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [otpSent, setOtpSent] = useState(false);
@@ -17,6 +17,19 @@ const ForgotPassword = () => {
   const handleSendOtp = async () => {
     setError("");
     setMessage("");
+
+    // Email validation
+    if (!email) {
+      setError("Please enter your email");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -34,133 +47,159 @@ const ForgotPassword = () => {
   const handleResetPassword = async () => {
     setError("");
     setMessage("");
+
+    // Validation
+    if (!otp || !newPassword) {
+      setError("Please fill in all fields");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await api.post("/api/auth/reset-password-otp", { email, otp, newPassword }); 
-      // endpoint name changed to match backend function
+      await api.post("/api/auth/reset-password-otp", { email, otp, newPassword });
       setMessage("✅ Password reset successfully! Redirecting to login...");
 
-      // clear fields
-      setOtpSent(false);
-      setEmail("");
-      setOtp("");
-      setNewPassword("");
-
+      // Clear fields
       setTimeout(() => {
-        navigate("/login"); 
-      }, 2000); // 2 second delay to let the user see the success message
-
-    } 
-    
-    catch (err) {
+        setOtpSent(false);
+        setEmail("");
+        setOtp("");
+        setNewPassword("");
+        navigate("/login");
+      }, 2000);
+    } catch (err) {
       setError(err.response?.data?.message || "Error resetting password");
     } finally {
       setLoading(false);
     }
   };
 
+  // ---------- GO BACK TO EMAIL STEP ----------
+  const goBackToEmail = () => {
+    setOtpSent(false);
+    setOtp("");
+    setNewPassword("");
+    setError("");
+    setMessage("");
+  };
+
+  // ---------- HANDLE ENTER KEY ----------
+  const handleKeyPress = (e, callback) => {
+    if (e.key === "Enter") {
+      callback();
+    }
+  };
+
   return (
-    <div
-      style={{
-        maxWidth: 400,
-        margin: "50px auto",
-        padding: 30,
-        border: "1px solid #ddd",
-        borderRadius: 12,
-        boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-        background: "#fff",
-      }}
-    >
-      <h2 style={{ textAlign: "center", marginBottom: 20 }}>Forgot Password</h2>
+    <div className="forgot-password-page">
+      <div className="bg-circle circle-1"></div>
+      <div className="bg-circle circle-2"></div>
+      <div className="bg-circle circle-3"></div>
 
-      {!otpSent ? (
-        <>
-          <input
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "10px",
-              marginBottom: "15px",
-              borderRadius: "8px",
-              border: "1px solid #ccc",
-            }}
-          />
-          <button
-            onClick={handleSendOtp}
-            disabled={loading || !email}
-            style={{
-              width: "100%",
-              padding: "10px",
-              borderRadius: "8px",
-              backgroundColor: "#4f46e5",
-              color: "white",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            {loading ? "Sending..." : "Send OTP"}
-          </button>
-        </>
-      ) : (
-        <>
-          <input
-            type="text"
-            placeholder="Enter OTP"
-            value={otp}
-            onChange={(e) => setOtp(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "10px",
-              marginBottom: "10px",
-              borderRadius: "8px",
-              border: "1px solid #ccc",
-            }}
-          />
-          <input
-            type="password"
-            placeholder="Enter new password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "10px",
-              marginBottom: "15px",
-              borderRadius: "8px",
-              border: "1px solid #ccc",
-            }}
-          />
-          <button
-            onClick={handleResetPassword}
-            disabled={loading || !otp || !newPassword}
-            style={{
-              width: "100%",
-              padding: "10px",
-              borderRadius: "8px",
-              backgroundColor: "#4f46e5",
-              color: "white",
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            {loading ? "Resetting..." : "Reset Password"}
-          </button>
-        </>
-      )}
+      <div className="forgot-password-container">
+        <div className="logo-container">
+          <div className="logo-icon">🔐</div>
+        </div>
 
-      {message && (
-        <p style={{ color: "green", marginTop: 15, textAlign: "center" }}>
-          {message}
+        <h2 className="forgot-password-title">Forgot Password?</h2>
+        <p className="subtitle">
+          {!otpSent
+            ? "Don't worry, we'll help you reset it"
+            : "Enter the code we sent to your email"}
         </p>
-      )}
-      {error && (
-        <p style={{ color: "red", marginTop: 15, textAlign: "center" }}>
-          {error}
-        </p>
-      )}
+
+        <div className="step-indicator">
+          <div className={`step ${true ? "active" : ""}`}></div>
+          <div className={`step ${otpSent ? "active" : ""}`}></div>
+        </div>
+
+        {/* EMAIL FORM */}
+        {!otpSent ? (
+          <div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="email">
+                Email Address
+              </label>
+              <input
+                type="email"
+                id="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyPress={(e) => handleKeyPress(e, handleSendOtp)}
+                className="form-input"
+                autoComplete="email"
+              />
+            </div>
+            <button
+              onClick={handleSendOtp}
+              disabled={loading || !email}
+              className="submit-btn"
+            >
+              {loading ? "Sending..." : "Send OTP"}
+            </button>
+          </div>
+        ) : (
+          /* OTP & PASSWORD FORM */
+          <div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="otp">
+                Enter OTP
+              </label>
+              <input
+                type="text"
+                id="otp"
+                placeholder="6-digit code"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                maxLength="6"
+                className="form-input"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="newPassword">
+                New Password
+              </label>
+              <input
+                type="password"
+                id="newPassword"
+                placeholder="Create a strong password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                onKeyPress={(e) => handleKeyPress(e, handleResetPassword)}
+                className="form-input"
+              />
+            </div>
+            <button
+              onClick={handleResetPassword}
+              disabled={loading || !otp || !newPassword}
+              className="submit-btn"
+            >
+              {loading ? "Resetting..." : "Reset Password"}
+            </button>
+            <div className="back-link">
+              <a href="#" onClick={(e) => { e.preventDefault(); goBackToEmail(); }}>
+                ← Back to email
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* MESSAGES */}
+        {message && <div className="message success">{message}</div>}
+        {error && <div className="message error">{error}</div>}
+
+        {/* BACK TO LOGIN */}
+        <div className="back-link">
+          <Link to="/login">← Back to Login</Link>
+        </div>
+      </div>
     </div>
   );
 };

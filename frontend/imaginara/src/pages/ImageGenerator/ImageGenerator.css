@@ -2,12 +2,12 @@
 
 .image-generator-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #f4ae8b 0%, #8f8ed5 100%);
   padding: 40px 20px;
 }
 
 .image-generator-container.dark {
-  background: linear-gradient(135deg, #1a1d24 0%, #2d1b3d 100%);
+  background: linear-gradient(135deg, #f49292 0%, #c96766 100%);
 }
 
 .image-generator-content {
@@ -33,17 +33,73 @@
   50% { transform: translateY(-10px); }
 }
 
+/* ==============================
+   SEXY HEADER STYLING 💫
+   ============================== */
+
 .header-title {
-  font-size: 48px;
-  font-weight: bold;
+  font-size: 3rem; /* 48px */
+  font-weight: 900;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, #9333ea, #db2777, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
   margin-bottom: 12px;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 0 20px rgba(147, 51, 234, 0.3);
+  animation: fadeInSlide 1.2s ease-out forwards, glowPulse 2.5s infinite ease-in-out;
+  opacity: 0;
 }
 
 .header-subtitle {
-  font-size: 18px;
-  opacity: 0.9;
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-align: center;
+  letter-spacing: 0.5px;
+  margin-top: 0.4rem;
+  opacity: 0;
+  animation: fadeInUp 1.8s ease-out forwards;
+  animation-delay: 0.6s;
 }
+
+/* ==============================
+   ANIMATIONS ✨
+   ============================== */
+
+@keyframes fadeInSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    text-shadow: 0 0 15px rgba(147, 51, 234, 0.4),
+                 0 0 30px rgba(219, 39, 119, 0.2);
+  }
+  50% {
+    text-shadow: 0 0 25px rgba(219, 39, 119, 0.5),
+                 0 0 50px rgba(147, 51, 234, 0.3);
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 
 /* Main Generator */
 .generator-main {
