@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Trash2, Heart, MessageCircle, Eye, Edit, X } from "lucide-react";
+import { User, Trash2, Heart, MessageCircle, Eye, Edit, X, Upload, Loader } from "lucide-react";
 import { io } from "socket.io-client";
 import FollowersModal from "../Followers/FollowersModal";
 import "./ProfilePage.css";
@@ -19,10 +19,13 @@ const ProfilePage = () => {
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editedCommentText, setEditedCommentText] = useState('');
   const [newAvatar, setNewAvatar] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
   const [name, setName] = useState('');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [removingAvatar, setRemovingAvatar] = useState(false);
   
   const [showFollowersModal, setShowFollowersModal] = useState(false);
-  const [modalType, setModalType] = useState('followers'); 
+  const [modalType, setModalType] = useState('followers');
 
   // Get userId from token
   const getUserIdFromToken = () => {
@@ -340,13 +343,40 @@ const ProfilePage = () => {
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
-    if (file) setNewAvatar(file);
+    if (file) {
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size should not exceed 5MB');
+        return;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+
+      setNewAvatar(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleUpdateProfile = async () => {
+    if (!name.trim()) {
+      alert('Name cannot be empty');
+      return;
+    }
+
+    setUploadingAvatar(true);
     const token = localStorage.getItem("token");
     const formData = new FormData();
-    formData.append("name", name);
+    formData.append("name", name.trim());
     if (newAvatar) formData.append("avatar", newAvatar);
 
     try {
@@ -361,13 +391,25 @@ const ProfilePage = () => {
 
       setProfile((prev) => ({ ...prev, user: data.user }));
       localStorage.setItem("user", JSON.stringify(data.user));
+      
+      // Clear avatar selection and preview
+      setNewAvatar(null);
+      setAvatarPreview(null);
+      
       alert("Profile updated successfully!");
     } catch (err) {
       alert(err.message);
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
   const handleRemoveAvatar = async () => {
+    if (!window.confirm('Are you sure you want to remove your profile picture?')) {
+      return;
+    }
+
+    setRemovingAvatar(true);
     const token = localStorage.getItem("token");
 
     try {
@@ -381,10 +423,20 @@ const ProfilePage = () => {
 
       setProfile((prev) => ({ ...prev, user: data.user }));
       localStorage.setItem("user", JSON.stringify(data.user));
+      setAvatarPreview(null);
+      setNewAvatar(null);
+      
       alert("Avatar removed successfully!");
     } catch (err) {
       alert(err.message);
+    } finally {
+      setRemovingAvatar(false);
     }
+  };
+
+  const handleCancelAvatarChange = () => {
+    setNewAvatar(null);
+    setAvatarPreview(null);
   };
 
   const handleArtworkClick = (artworkId) => {
@@ -641,27 +693,91 @@ const ProfilePage = () => {
           {/* Profile Header */}
           <div className="profile-header">
             <div className="profile-avatar">
-              {profile.user?.avatar ? (
-                <img src={profile.user.avatar} alt={profile.user.name} />
+              {avatarPreview || profile.user?.avatar ? (
+                <img src={avatarPreview || profile.user.avatar} alt={profile.user.name} />
               ) : (
                 <User size={48} />
               )}
+              {(uploadingAvatar || removingAvatar) && (
+                <div className="avatar-loading-overlay">
+                  <Loader className="spinner-icon" size={32} />
+                </div>
+              )}
+            </div>
 
-              <div className="avatar-actions-top">
-                <label className="btn btn-outline">
-                  <span className="btn-icon">✏️</span> Change
-                  <input type="file" accept="image/*" onChange={handleAvatarChange} hidden />
-                </label>
-                {profile.user?.avatar && (
-                  <button onClick={handleRemoveAvatar} className="btn btn-danger">
-                    <span className="btn-icon">🗑️</span> Remove
+            <div className="avatar-actions-top">
+              {!avatarPreview ? (
+                <>
+                  <label className="btn btn-outline">
+                    <Upload size={16} className="btn-icon" />
+                    Change
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleAvatarChange} 
+                      hidden 
+                      disabled={uploadingAvatar || removingAvatar}
+                    />
+                  </label>
+                  {profile.user?.avatar && (
+                    <button 
+                      onClick={handleRemoveAvatar} 
+                      className="btn btn-danger"
+                      disabled={uploadingAvatar || removingAvatar}
+                    >
+                      {removingAvatar ? (
+                        <>
+                          <Loader className="spinner-icon-sm" size={16} />
+                          Removing...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 size={16} className="btn-icon" />
+                          Remove
+                        </>
+                      )}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <button 
+                    onClick={handleUpdateProfile} 
+                    className="btn btn-primary"
+                    disabled={uploadingAvatar}
+                  >
+                    {uploadingAvatar ? (
+                      <>
+                        <Loader className="spinner-icon-sm" size={16} />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={16} className="btn-icon" />
+                        Upload
+                      </>
+                    )}
                   </button>
-                )}
-                
-                <button onClick={handleUpdateProfile} className="btn btn-primary">
-                  <span className="btn-icon">💾</span> Save
+                  <button 
+                    onClick={handleCancelAvatarChange} 
+                    className="btn btn-secondary"
+                    disabled={uploadingAvatar}
+                  >
+                    <X size={16} className="btn-icon" />
+                    Cancel
+                  </button>
+                </>
+              )}
+              
+              {!avatarPreview && (
+                <button 
+                  onClick={handleUpdateProfile} 
+                  className="btn btn-primary"
+                  disabled={uploadingAvatar || removingAvatar}
+                >
+                  💾 Save Name
                 </button>
-              </div>
+              )}
             </div>
 
             <div className="profile-info">
@@ -671,6 +787,7 @@ const ProfilePage = () => {
                 onChange={(e) => setName(e.target.value)}
                 className="input input-bordered w-full max-w-xs mb-4"
                 placeholder="Your Name"
+                disabled={uploadingAvatar || removingAvatar}
               />
 
               <div className="profile-stats mt-4">

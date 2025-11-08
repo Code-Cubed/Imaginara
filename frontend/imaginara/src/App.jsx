@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Landing from "./pages/Landing/Landing";
 import Login from "./pages/Auth/Login";
 import SignUp from "./pages/Auth/SignUp";
+import VerifyEmail from './pages/Auth/verifyemail';
 import HomePage from "./pages/Artwork/ArtworkList";
 import ArtworkDetail from "./pages/Artwork/ArtworkDetail";
 import AddArtwork from "./pages/Artwork/Addartwork";
@@ -77,7 +78,10 @@ function AppContent() {
             path="/signup"
             element={isAuthenticated ? <Navigate to="/home" replace /> : <SignUp onSignUp={handleLogin} />}
           />
-           
+           <Route
+            path="/verify-email"
+            element={isAuthenticated ? <Navigate to="/home" replace /> : <VerifyEmail onVerify={handleLogin} />}
+          />
           <Route path="/auth/callback" element={<OAuthCallback 
            onLogin={handleLogin} />} />
           
