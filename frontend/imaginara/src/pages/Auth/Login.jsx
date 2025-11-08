@@ -150,7 +150,7 @@ const styles = {
     fontFamily: "'Inter', sans-serif",
     padding: "20px",
     background: "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)",
-    animation: "gradientShift 10s ease infinite",
+    // animation: "gradientShift 10s ease infinite",
   },
 
   

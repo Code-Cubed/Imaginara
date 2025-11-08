@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../../api/api";
-import OAuthButtons from "./OAuthButtons"; // Import OAuth component
-import { Eye, EyeOff } from 'lucide-react'; // Import icons
+import OAuthButtons from "./OAuthButtons";
+import { Eye, EyeOff } from 'lucide-react';
 
 const SignUp = ({ onSignUp }) => {
   const navigate = useNavigate();
@@ -12,7 +12,6 @@ const SignUp = ({ onSignUp }) => {
   const [avatar, setAvatar] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isFileInputHover, setIsFileInputHover] = useState(false);
-  // New state for password visibility
   const [showPassword, setShowPassword] = useState(false);
   
   const validEmailRegex = /^[a-zA-Z0-9._%+-]+@(gmail\.com|yahoo\.com|outlook\.com)$/;
@@ -32,12 +31,11 @@ const SignUp = ({ onSignUp }) => {
     setError("");
 
     // Email validation
-      if (!validEmailRegex.test(form.email)) {
-        setError("Please enter a valid email (gmail.com, yahoo.com, outlook.com only).");
-        setLoading(false);
-        return;
-      }
-
+    if (!validEmailRegex.test(form.email)) {
+      setError("Please enter a valid email (gmail.com, yahoo.com, outlook.com only).");
+      setLoading(false);
+      return;
+    }
 
     try {
       const formData = new FormData();
@@ -50,9 +48,10 @@ const SignUp = ({ onSignUp }) => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      localStorage.setItem("token", res.data.token);
-      onSignUp?.();
-      navigate("/home");
+      // ✅ NEW: Navigate to email verification page instead of home
+      navigate("/verify-email", { 
+        state: { email: form.email } 
+      });
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong");
     } finally {
@@ -142,13 +141,13 @@ const SignUp = ({ onSignUp }) => {
             {/* Password input with show/hide toggle */}
             <div style={styles.passwordContainer}>
               <input
-                type={showPassword ? "text" : "password"} // Dynamic type
+                type={showPassword ? "text" : "password"}
                 name="password"
                 placeholder="Password"
                 value={form.password}
                 onChange={handleChange}
                 required
-                style={{ ...styles.input, paddingRight: '45px' }} // Add space for icon
+                style={{ ...styles.input, paddingRight: '45px' }}
               />
               <button
                 type="button"
@@ -158,7 +157,6 @@ const SignUp = ({ onSignUp }) => {
                 {showPassword ? <EyeOff size={20} color="#777" /> : <Eye size={20} color="#777" />}
               </button>
             </div>
-
 
             {/* Avatar Upload */}
             <div
@@ -234,7 +232,6 @@ const styles = {
     overflow: "auto",
     fontFamily: "'Inter', sans-serif",
   },
-
   card: {
     display: "flex",
     flexWrap: "wrap",
@@ -245,7 +242,6 @@ const styles = {
     background: "rgba(255, 255, 255, 0.9)",
     transition: "transform 0.4s ease, box-shadow 0.4s ease",
   },
-
   leftSection: {
     flex: 1.2,
     minHeight: "700px",
@@ -258,7 +254,6 @@ const styles = {
     justifyContent: "center",
     textAlign: "center",
   },
-
   brand: {
     fontSize: "38px",
     marginBottom: "15px",
@@ -266,7 +261,6 @@ const styles = {
     letterSpacing: "1.5px",
     textShadow: "0 4px 6px rgba(0,0,0,0.15)",
   },
-
   tagline: {
     fontSize: "17px",
     opacity: "0.9",
@@ -274,7 +268,6 @@ const styles = {
     lineHeight: "1.6",
     fontWeight: "300",
   },
-
   illustrationPlaceholder: {
     width: "150px",
     height: "150px",
@@ -286,14 +279,12 @@ const styles = {
     justifyContent: "center",
     boxShadow: "0 0 20px rgba(255, 255, 255, 0.3)",
   },
-
   svgIcon: {
     width: "80%",
     height: "80%",
     color: "white",
     strokeWidth: "1",
   },
-
   rightSection: {
     flex: 1,
     display: "flex",
@@ -302,7 +293,6 @@ const styles = {
     padding: "60px 50px",
     backgroundColor: "#ffffff",
   },
-
   form: {
     width: "100%",
     maxWidth: "380px",
@@ -310,7 +300,6 @@ const styles = {
     flexDirection: "column",
     gap: "18px",
   },
-
   title: {
     textAlign: "center",
     fontSize: "30px",
@@ -318,8 +307,6 @@ const styles = {
     marginBottom: "25px",
     fontWeight: "700",
   },
-
-  // New styles for password input
   passwordContainer: {
     position: 'relative',
     width: '100%',
@@ -336,8 +323,6 @@ const styles = {
     lineHeight: '0',
     zIndex: 10,
   },
-  // End new styles
-
   input: {
     padding: "16px",
     borderRadius: "12px",
@@ -349,7 +334,6 @@ const styles = {
     width: '100%',
     boxSizing: 'border-box'
   },
-
   fileInputContainer: {
     display: "flex",
     alignItems: "center",
@@ -358,16 +342,13 @@ const styles = {
     border: "1px solid #d0d7de",
     backgroundColor: "#f9fbfd",
     cursor: "pointer",
-    transition:
-      "border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease",
+    transition: "border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease",
   },
-
   fileInputContainerHover: {
     borderColor: "#6a82fb",
     backgroundColor: "#eef4ff",
     boxShadow: "0 0 0 2px rgba(106, 130, 251, 0.3)",
   },
-
   uploadIcon: {
     width: "20px",
     height: "20px",
@@ -375,11 +356,9 @@ const styles = {
     verticalAlign: "middle",
     transition: "stroke 0.3s ease",
   },
-
   uploadIconHover: {
     stroke: "#fc5c7d",
   },
-
   fileInputLabel: {
     flexGrow: 1,
     fontSize: "16px",
@@ -389,11 +368,9 @@ const styles = {
     textOverflow: "ellipsis",
     fontWeight: "500",
   },
-
   hiddenInput: {
     display: "none",
   },
-
   button: {
     padding: "16px",
     borderRadius: "12px",
@@ -407,7 +384,6 @@ const styles = {
     transition: "all 0.3s ease",
     boxShadow: "0 10px 25px rgba(106, 130, 251, 0.4)",
   },
-
   error: {
     color: "#e74c3c",
     textAlign: "center",
@@ -415,13 +391,11 @@ const styles = {
     fontWeight: "500",
     marginTop: "-5px",
   },
-
   text: {
     textAlign: "center",
     fontSize: "15px",
     color: "#6c757d",
   },
-
   link: {
     color: "#6a82fb",
     fontWeight: "600",

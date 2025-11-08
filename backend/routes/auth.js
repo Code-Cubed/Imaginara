@@ -5,6 +5,8 @@ const authController = require('../controllers/authController');
 const { upload } = require('../middlewares/upload');
 
 router.post('/register', upload.single('avatar'), authController.register);
+router.post('/verify-email', authController.verifyEmailOtp);
+router.post('/resend-verification-otp', authController.resendVerificationOtp);
 router.post('/login', authController.login);
 router.post('/send-otp', authController.sendOtp);
 router.post('/reset-password-otp', authController.resetPasswordWithOtp);
