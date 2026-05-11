@@ -90,8 +90,10 @@ const BoardDetailPage = ({ onLogout }) => {
     fetchBoard();
     fetchMessages();
 
-    // Initialize Socket.IO connection
+    // Initialize Socket.IO connection — pass JWT so the server can verify identity
+    const token = localStorage.getItem('token');
     const newSocket = io('http://localhost:8000', {
+      auth: { token },
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
@@ -112,6 +114,12 @@ const BoardDetailPage = ({ onLogout }) => {
 
     newSocket.on('connect_error', (error) => {
       console.error('Socket connection error:', error);
+    });
+
+    newSocket.on('board-error', (data) => {
+      console.error('Board access denied:', data.message);
+      // Redirect away if not authorized to be in this board room
+      alert(data.message);
     });
 
     // Chat message handler - CRITICAL FIX

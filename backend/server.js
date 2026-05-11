@@ -2,11 +2,15 @@ require('dotenv').config();
 
 const express = require('express');
 const http = require('http');
+const path = require('path');
 const cors = require('cors');
 const connectDB = require('./config/db');
 const session = require('express-session');
 const passport = require('passport');
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
+const User = require('./models/User');
+const Board = require('./models/Board');
 
  
 // Routes
@@ -42,6 +46,9 @@ app.use(
 );
 
 app.use(express.json());
+
+// Serve locally saved fallback files (used when Cloudinary is down)
+app.use('/temp_uploads', express.static(path.join(__dirname, 'temp_uploads')));
 
 app.use(
   session({
@@ -79,12 +86,36 @@ const io = new Server(server, {
 app.set('io', io);
 
 
+//  Socket.IO Auth Middleware
+
+io.use(async (socket, next) => {
+  try {
+    const token =
+      socket.handshake.auth?.token ||
+      socket.handshake.headers?.authorization?.split(' ')[1];
+
+    if (!token) {
+      return next(new Error('Authentication required'));
+    }
+
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(payload.id).select('-password');
+    if (!user) return next(new Error('User not found'));
+
+    socket.user = user; // attach user to socket for later use
+    next();
+  } catch (err) {
+    next(new Error('Invalid token'));
+  }
+});
+
+
 //  Socket.IO Events
 
 const boardUsers = new Map(); // Track users per board
 
 io.on('connection', (socket) => {
-  console.log('✅ Socket connected:', socket.id);
+  console.log(`✅ Socket connected: ${socket.id} (user: ${socket.user._id})`);
 
   // Existing User Events 
   socket.on('join-user', (userId) => {
@@ -113,25 +144,44 @@ io.on('connection', (socket) => {
     io.to(data.artworkId).emit('like-updated', { likes: data.likes });
   });
 
-  // FIXED: Board Events 
-  socket.on('join-board', (boardId) => {
-    // Use boardId directly (no prefix) to match frontend
-    socket.join(boardId);
-    
-    // Track user in board
-    if (!boardUsers.has(boardId)) {
-      boardUsers.set(boardId, new Set());
+  // Board Events — membership verified before joining
+  socket.on('join-board', async (boardId) => {
+    try {
+      const board = await Board.findById(boardId);
+
+      if (!board) {
+        return socket.emit('board-error', { message: 'Board not found' });
+      }
+
+      const userId = socket.user._id.toString();
+      const isCreator = board.creator.toString() === userId;
+      const isMember = board.members.some(m => m.user.toString() === userId);
+
+      // Allow public boards to be viewed but not joined as a participant
+      // unless the user is creator or member
+      if (!isCreator && !isMember) {
+        return socket.emit('board-error', { message: 'Access denied: not a board member' });
+      }
+
+      socket.join(boardId);
+
+      if (!boardUsers.has(boardId)) {
+        boardUsers.set(boardId, new Set());
+      }
+      boardUsers.get(boardId).add(socket.id);
+
+      console.log(`✅ Socket ${socket.id} (user: ${userId}) joined board ${boardId}`);
+      console.log(`📊 Board ${boardId} now has ${boardUsers.get(boardId).size} users`);
+
+      socket.to(boardId).emit('user-joined-board', {
+        socketId: socket.id,
+        userId,
+        timestamp: new Date()
+      });
+    } catch (err) {
+      console.error('join-board error:', err.message);
+      socket.emit('board-error', { message: 'Failed to join board' });
     }
-    boardUsers.get(boardId).add(socket.id);
-    
-    console.log(`✅ Socket ${socket.id} joined board ${boardId}`);
-    console.log(`📊 Board ${boardId} now has ${boardUsers.get(boardId).size} users`);
-    
-    // Notify others in the board
-    socket.to(boardId).emit('user-joined-board', {
-      socketId: socket.id,
-      timestamp: new Date()
-    });
   });
 
   socket.on('leave-board', (boardId) => {

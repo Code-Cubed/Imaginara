@@ -53,11 +53,19 @@ const uploadToCloudinary = (buffer, folder = 'gallery', mediaType = 'image') => 
       ];
     }
 
+    // Set a timeout so we don't hang forever if Cloudinary is unresponsive
+    const uploadTimeout = setTimeout(() => {
+      reject(new Error('CLOUDINARY_TIMEOUT: Upload timed out after 30 seconds'));
+    }, 30000);
+
     const uploadStream = cloudinary.uploader.upload_stream(
       uploadOptions,
       (error, result) => {
+        clearTimeout(uploadTimeout);
         if (error) {
           console.error('Cloudinary upload error:', error);
+          // Tag the error so controllers can identify it
+          error.isCloudinaryError = true;
           reject(error);
         } else {
           resolve(result);

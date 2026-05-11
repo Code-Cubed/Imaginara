@@ -18,7 +18,11 @@ const ArtworkSchema = new mongoose.Schema({
   // AI Embeddings for similarity search
   textEmbedding: [Number], // Vector for text similarity
   imageEmbedding: [Number], // Vector for image similarity
-  embeddingsGenerated: { type: Boolean, default: false }
+  embeddingsGenerated: { type: Boolean, default: false },
+
+  // Fallback upload tracking
+  // true = Cloudinary was down, file saved locally, retry queued
+  isPending: { type: Boolean, default: false }
 }, { timestamps: true });
 
 // Index for similarity search

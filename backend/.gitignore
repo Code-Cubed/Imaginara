@@ -26,3 +26,6 @@ dist-ssr
 *.sln
 
 *.sw?
+
+# Local fallback uploads (temporary files when Cloudinary is down)
+temp_uploads/
